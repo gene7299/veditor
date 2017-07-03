@@ -1,0 +1,182 @@
+#editwrapper {
+  outline: 2px solid #ddd;
+  left: 10%;
+  top: 10%;
+  position: absolute;
+  width: 70%;
+  height: 70%;
+  display: inline-block;
+  vertical-align: top;
+  background-color: #ffffff;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+.drag_main{
+  left: 0;
+  top: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.canvas_main{
+  left: 0;
+  top: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.selshape_active {
+  outline: 2px solid #3196fe;
+  /*box-shadow: 0px 0px 0px 3px #3196fe;*/
+}
+.shape {
+  -webkit-transform: translate(0px, 0px);
+  transform: translate(0px, 0px);
+  position: absolute;
+}
+.selshape {
+  color: white;
+  -webkit-transform: translate(0px, 0px);
+  transform: translate(0px, 0px);
+  position: absolute;
+}
+
+#drag-me::before {
+  content: "#" attr(id);
+  font-weight: bold;
+}
+
+.shape img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+.shape .info {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.resize-handlers {
+  
+}
+.select-handler {
+  outline: 2px solid #3196fe;
+  width : 100%;
+  height : 100%;
+  top:0;
+  left:0;
+  position: absolute;
+  
+}
+
+/*
+// 0  1  2
+// 3     4
+// 5  6  7
+*/
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-image: url('img/handlerpin10.fw.png');
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: contain;
+}
+
+.resize-handle-0 {
+  top: -5px;
+  left: -5px;
+  cursor: nw-resize;
+}
+
+.resize-handle-1 {
+  top: -5px;
+  left: calc(50% - 5px);
+  cursor: n-resize;
+}
+
+.resize-handle-2 {
+  top: -5px;
+  right: -5px;
+  cursor: ne-resize;
+}
+
+.resize-handle-3 {
+  top: calc(50% - 5px);
+  left: -5px;
+  cursor: w-resize;
+}
+
+.resize-handle-4 {
+  top: calc(50% - 5px);
+  right: -5px;
+  cursor: e-resize;
+}
+
+.resize-handle-5 {
+  bottom: -5px;
+  left: -5px;
+  cursor: sw-resize;
+}
+
+.resize-handle-6 {
+  bottom: -5px;
+  left: calc(50% - 5px);
+  cursor: s-resize;
+}
+
+.resize-handle-7 {
+  right: -5px;
+  bottom: -5px;
+  cursor: se-resize;
+}
+
+.resizebig-handle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  /*background-color: rgba(255,255,0,0.5) ;*/
+}
+.resizebig-handle-0 {
+  top: -15px;
+  left: -15px;
+}
+.resizebig-handle-1 {
+  top: -15px;
+  left: calc(50% - 15px);
+}
+
+.resizebig-handle-2 {
+  top: -15px;
+  right: -15px;
+}
+
+.resizebig-handle-3 {
+  top: calc(50% - 15px);
+  left: -15px;
+}
+
+.resizebig-handle-4 {
+  top: calc(50% - 15px);
+  right: -15px;
+}
+
+.resizebig-handle-5 {
+  bottom: -15px;
+  left: -15px;
+}
+
+.resizebig-handle-6 {
+  bottom: -15px;
+  left: calc(50% - 15px);
+}
+
+.resizebig-handle-7 {
+  right: -15px;
+  bottom: -15px;
+}
