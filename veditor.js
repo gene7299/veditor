@@ -322,28 +322,28 @@ var layouteditor = function (id) {
     //deltaSource = deltaSource || defaultOptions.deltaSource;
     var deltaSource = 'page'
     var sourceX = deltaSource + 'X',
-        sourceY = deltaSource + 'Y',
-        touches = getTouchPair(event),
-        dx = touches[0][sourceX] - touches[1][sourceX],
-        dy = touches[0][sourceY] - touches[1][sourceY],
-        angle = 180 * Math.atan(dy / dx) / Math.PI;
+      sourceY = deltaSource + 'Y',
+      touches = getTouchPair(event),
+      dx = touches[0][sourceX] - touches[1][sourceX],
+      dy = touches[0][sourceY] - touches[1][sourceY],
+      angle = 180 * Math.atan(dy / dx) / Math.PI;
 
     if (isNumber(prevAngle)) {
-        var dr = angle - prevAngle,
-            drClamped = dr % 360;
+      var dr = angle - prevAngle,
+        drClamped = dr % 360;
 
-        if (drClamped > 315) {
-            angle -= 360 + (angle / 360) | 0 * 360;
-        }
-        else if (drClamped > 135) {
-            angle -= 180 + (angle / 360) | 0 * 360;
-        }
-        else if (drClamped < -315) {
-            angle += 360 + (angle / 360) | 0 * 360;
-        }
-        else if (drClamped < -135) {
-            angle += 180 + (angle / 360) | 0 * 360;
-        }
+      if (drClamped > 315) {
+        angle -= 360 + (angle / 360) | 0 * 360;
+      }
+      else if (drClamped > 135) {
+        angle -= 180 + (angle / 360) | 0 * 360;
+      }
+      else if (drClamped < -315) {
+        angle += 360 + (angle / 360) | 0 * 360;
+      }
+      else if (drClamped < -135) {
+        angle += 180 + (angle / 360) | 0 * 360;
+      }
     }
 
     return angle;
@@ -364,7 +364,7 @@ var layouteditor = function (id) {
 
     return hypot(dx, dy);
   }
-  CanvasState.prototype.getGesture = function (e,prevAngle) {
+  CanvasState.prototype.getGesture = function (e, prevAngle) {
     e.preventDefault(); //to skip 2nd event
     var length = 0;
     var d = 0;
@@ -374,7 +374,7 @@ var layouteditor = function (id) {
       var touch = e.touches[0] || e.changedTouches[0];
       if (length > 1) {
         d = touchDistance(e);
-        a = touchAngle(e,prevAngle);
+        a = touchAngle(e, prevAngle);
         console.log("[A]touchDistance=" + d);
       }
     } else {
@@ -382,7 +382,7 @@ var layouteditor = function (id) {
       var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
       if (length > 1) {
         d = touchDistance(e.originalEvent);
-        a = touchAngle(e.originalEvent,prevAngle);
+        a = touchAngle(e.originalEvent, prevAngle);
         console.log("[B]touchDistance=" + d);
       }
     }
@@ -432,13 +432,13 @@ var layouteditor = function (id) {
   CanvasState.prototype.checkGesture = function (e) {
     debug.log("checkGesture");
     debug.log("this.gesturing=" + this.gesturing);
-    var gesture = this.getGesture(e,undefined);
+    var gesture = this.getGesture(e, undefined);
     var isGestureEvent = false;
     if (gesture.l > 1) {
       isGestureEvent = true;
 
       if (this.gesturing == false) {
-        gesture = this.getGesture(e,undefined);
+        gesture = this.getGesture(e, undefined);
         if (this.selection == null) {
           console.warn("There is not in selection")
           if (mySel != null) {
@@ -455,7 +455,7 @@ var layouteditor = function (id) {
         extend(this.preSel, preSel);
         this.gesturing = true;
       } else {
-        gesture = this.getGesture(e,this.gesture.prevAngle);
+        gesture = this.getGesture(e, this.gesture.prevAngle);
         if (e.target != null && e.target.getAttribute('id') !== null && e.target.classList.contains('selshape') && this.selection.selDomId != e.target.getAttribute('id')) {
           console.warn("[G]Selection is diffenet from now - this.gesturing=false");
           console.log("[G]this.selection.selDomId=" + this.selection.selDomId);
@@ -513,8 +513,8 @@ var layouteditor = function (id) {
           if ((this.selection.y + this.selection.h) > this.height - 5) {
             this.selection.h = this.height - this.selection.y;
           }
-          document.getElementById('output_gesutre_angle').innerHTML = (gesture.a-this.gesture.startAngle);       
-          r = r + (gesture.a-this.gesture.prevAngle);
+          //document.getElementById('output_gesutre_angle').innerHTML = (gesture.a-this.gesture.startAngle);       
+          r = r + (gesture.a - this.gesture.prevAngle);
           this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
             'scale(' + 1 + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + r + 'deg)';
           this.selection.seldom.style.width = this.selection.w + 'px';
@@ -924,7 +924,7 @@ var layouteditor = function (id) {
         // 0  1  2   // tl   top  tr
         // 3     4   // left  c   right
         // 5  6  7   // bl  bottom  br
-        if(0){
+        if (1) {
           var fixright = false;
           var fixtop = false;
           var fixbottom = false;
@@ -933,78 +933,54 @@ var layouteditor = function (id) {
           switch (this.expectResize) {
             case 0:
             case 'tl':
-              this.selection.x = mouse.x;
-              this.selection.y = mouse.y;
-              this.selection.w += oldx - this.selection.x;
-              this.selection.h += oldy - this.selection.y;
               fixright = true;
               fixbottom = true;
               break;
             case 1:
             case 'top':
-              //this.selection.y = mouse.y;
-              //this.selection.h += oldy - mouse.y;
-              //fixbottom = true;
-              this.selection.h = new_center.height;
-              this.selection.x = new_tl.x;
-              this.selection.y = new_tl.y;
+              fixbottom = true;
               break;
             case 2:
             case 'tr':
-              this.selection.y = mouse.y;
-              this.selection.w = mouse.x - oldx;
-              this.selection.h += oldy - mouse.y;
               fixbottom = true;
               break;
             case 3:
             case 'left':
-              //this.selection.x = mouse.x;
-              //this.selection.w += oldx - mouse.x;
-              //fixright = true;
-              this.selection.w = new_center.width;
-              this.selection.x = new_tl.x;
-              this.selection.y = new_tl.y;
               fixright = true;
               break;
             case 4:
             case 'right':
-              //this.selection.w = mouse.x - oldx;
-              this.selection.w = new_center.width;
-              this.selection.x = new_tl.x;
-              this.selection.y = new_tl.y;
               break;
             case 5:
             case 'bl':
-              this.selection.x = mouse.x;
-              this.selection.w += oldx - mouse.x;
-              this.selection.h = mouse.y - oldy;
               fixright = true;
               break;
             case 6:
             case 'bottom':
-              //this.selection.h = mouse.y - oldy;
-              this.selection.h = new_center.height;
-              this.selection.x = new_tl.x;
-              this.selection.y = new_tl.y;
               break;
             case 7:
             case 'br':
-              //this.selection.w = mouse.x - oldx;
-              //this.selection.h = mouse.y - oldy;
-              this.selection.w = new_center.width;
-              this.selection.h = new_center.height;
-              this.selection.x = new_tl.x;
-              this.selection.y = new_tl.y;
               break;
           }
         }
-        if (this.selection.w < 1) {
+        if (this.selection.w < 1 && this.selection.h < 1) {
           this.selection.w = 1;
-          this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
-        }
-        if (this.selection.h < 1) {
           this.selection.h = 1;
+          this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
           this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
+        } else {
+          if (this.selection.w < 1) {
+            this.selection.w = 1;
+            this.selection.h = oldh;
+            this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
+            this.selection.y = oldy;
+          }
+          if (this.selection.h < 1) {
+            this.selection.w = oldw;
+            this.selection.h = 1;
+            this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
+            this.selection.x = oldx;
+          }
         }
 
         if (this.selection.w < 5 && this.selection.h < 5) {
@@ -1019,13 +995,6 @@ var layouteditor = function (id) {
         if (fixbottom && this.selection.y < 5) {
           this.selection.y = 0;
           this.selection.h = oldy_h - this.selection.y;
-        }
-        if ((this.selection.x + this.selection.w) > this.width - 5) {
-          this.selection.w = this.width - this.selection.x;
-
-        }
-        if ((this.selection.y + this.selection.h) > this.height - 5) {
-          this.selection.h = this.height - this.selection.y;
         }
       }
 
@@ -1525,28 +1494,6 @@ var layouteditor = function (id) {
     obj.y += (point.y - origin.y) * (y_ratio - 1);
     return obj;
   };
-  function pointsToScale(origin) {
-    switch (origin) {
-      case this.tc:
-        return [this.bl, this.bc, this.br, this.rc, this.lc];
-      case this.rc:
-        return [this.bl, this.lc, this.tl, this.tc, this.bc];
-      case this.bc:
-        return [this.tl, this.tc, this.tr, this.rc, this.lc];
-      case this.lc:
-        return [this.br, this.rc, this.tr, this.bc, this.tc];
-      case this.tl://
-        return [this.tr, this.br, this.bl, this.tc, this.rc, this.bc, this.lc];
-      case this.tr:
-        return [this.tl, this.br, this.bl, this.tc, this.rc, this.bc, this.lc];
-      case this.br://
-        return [this.tl, this.tr, this.bl, this.tc, this.rc, this.bc, this.lc];
-      case this.bl:
-        return [this.tl, this.tr, this.br, this.tc, this.rc, this.bc, this.lc];
-      default:
-        return [this.tl, this.tr, this.br, this.bl, this.tc, this.rc, this.bc, this.lc];
-    }
-  }
   function calcMidPoint(a, b) {
     var p = 0.5;
     return { x: (a.x + (b.x - a.x) * p), y: (a.y + (b.y - a.y) * p) };
