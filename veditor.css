@@ -180,3 +180,47 @@
   right: -15px;
   bottom: -15px;
 }
+
+.rotate-handle {
+  top: -30px;
+  left: calc(50% - 5px);
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-image: url('img/handlerpin10.fw.png');
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: contain;
+  cursor: auto;
+}
+/*
+.rotate-handle:hover {
+  top: -52px;
+  left: calc(50% - 26px);
+  width: 52px;
+  height: 52px;
+  background-image: url('img/roatate_handler.png');  
+}*/
+.rotate-handle-active {
+  top: -52px;
+  left: calc(50% - 26px);
+  width: 52px;
+  height: 52px;
+  background-image: url('img/roatate_handler.png');  
+}
+.rotate-connecterline {
+  top: -30px;
+  left: calc(50% - 1px);
+  position: absolute;
+  width: 2px;
+  height: 30px;
+  background-color: #3196fe;
+  cursor: auto;
+}
+.rotatebig-handle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  top: -40px;
+  left: calc(50% - 15px);
+}

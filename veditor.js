@@ -199,6 +199,8 @@ var layouteditor = function (id) {
     this.expectResize = -1;
     this.resizeing = false;
     this.resizestart = false;
+    this.rotating = false;
+    this.rotatestart = false;
     this.gesturing = false;
     this.preSel = {};
     this.preMouse = {};
@@ -300,6 +302,52 @@ var layouteditor = function (id) {
 
     return touches;
   }
+  function touchAnglex(event) {
+    //deltaSource = deltaSource || defaultOptions.deltaSource;
+    var showevent = {};
+    extend(showevent, event);
+    //console.log(showevent)
+    var deltaSource = 'page'
+    var sourceX = deltaSource + 'X',
+      sourceY = deltaSource + 'Y',
+      touches = getTouchPair(event);
+
+
+    var dx = touches[0][sourceX] - touches[1][sourceX],
+      dy = touches[0][sourceY] - touches[1][sourceY];
+
+    return getDegree(Math.atan2(dy, dx));
+  }
+  function touchAngle(event, prevAngle) {
+    //deltaSource = deltaSource || defaultOptions.deltaSource;
+    var deltaSource = 'page'
+    var sourceX = deltaSource + 'X',
+        sourceY = deltaSource + 'Y',
+        touches = getTouchPair(event),
+        dx = touches[0][sourceX] - touches[1][sourceX],
+        dy = touches[0][sourceY] - touches[1][sourceY],
+        angle = 180 * Math.atan(dy / dx) / Math.PI;
+
+    if (isNumber(prevAngle)) {
+        var dr = angle - prevAngle,
+            drClamped = dr % 360;
+
+        if (drClamped > 315) {
+            angle -= 360 + (angle / 360) | 0 * 360;
+        }
+        else if (drClamped > 135) {
+            angle -= 180 + (angle / 360) | 0 * 360;
+        }
+        else if (drClamped < -315) {
+            angle += 360 + (angle / 360) | 0 * 360;
+        }
+        else if (drClamped < -135) {
+            angle += 180 + (angle / 360) | 0 * 360;
+        }
+    }
+
+    return angle;
+  }
   function touchDistance(event) {
     //deltaSource = deltaSource || defaultOptions.deltaSource;
     var showevent = {};
@@ -316,15 +364,17 @@ var layouteditor = function (id) {
 
     return hypot(dx, dy);
   }
-  CanvasState.prototype.getGesture = function (e) {
+  CanvasState.prototype.getGesture = function (e,prevAngle) {
     e.preventDefault(); //to skip 2nd event
     var length = 0;
     var d = 0;
+    var a = 0;
     if (typeof e.originalEvent == "undefined") {
       length = e.touches.length;
       var touch = e.touches[0] || e.changedTouches[0];
       if (length > 1) {
         d = touchDistance(e);
+        a = touchAngle(e,prevAngle);
         console.log("[A]touchDistance=" + d);
       }
     } else {
@@ -332,12 +382,14 @@ var layouteditor = function (id) {
       var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
       if (length > 1) {
         d = touchDistance(e.originalEvent);
+        a = touchAngle(e.originalEvent,prevAngle);
         console.log("[B]touchDistance=" + d);
       }
     }
     return {
       l: length,
       d: d,
+      a: a,
     };
   }
   CanvasState.prototype.getTouch = function (e) {
@@ -380,13 +432,13 @@ var layouteditor = function (id) {
   CanvasState.prototype.checkGesture = function (e) {
     debug.log("checkGesture");
     debug.log("this.gesturing=" + this.gesturing);
-    var gesture = this.getGesture(e);
+    var gesture = this.getGesture(e,undefined);
     var isGestureEvent = false;
     if (gesture.l > 1) {
       isGestureEvent = true;
 
       if (this.gesturing == false) {
-
+        gesture = this.getGesture(e,undefined);
         if (this.selection == null) {
           console.warn("There is not in selection")
           if (mySel != null) {
@@ -397,11 +449,13 @@ var layouteditor = function (id) {
           }
         }
         this.gesture.prevDistance = this.gesture.startDistance = gesture.d;
+        this.gesture.startAngle = this.gesture.prevAngle = gesture.a;
         console.log("this.gesture.startDistance=" + this.gesture.startDistance);
         var preSel = objectFindByKey(shapes, 'selDomId', e.target.getAttribute('id'));
         extend(this.preSel, preSel);
         this.gesturing = true;
       } else {
+        gesture = this.getGesture(e,this.gesture.prevAngle);
         if (e.target != null && e.target.getAttribute('id') !== null && e.target.classList.contains('selshape') && this.selection.selDomId != e.target.getAttribute('id')) {
           console.warn("[G]Selection is diffenet from now - this.gesturing=false");
           console.log("[G]this.selection.selDomId=" + this.selection.selDomId);
@@ -424,7 +478,7 @@ var layouteditor = function (id) {
           var oldh = this.selection.h;
           var fixright = true;
           var fixbottom = true;
-
+          var r = this.selection.r;
           this.selection.w = parseFloat(scale * this.selection.w);// parseFloat((scale * this.preSel.w).toFixed(2));
           this.selection.h = parseFloat(scale * this.selection.h);//parseFloat((scale * this.preSel.h).toFixed(2));
           this.selection.x = this.selection.x - (this.selection.w - oldw) * 0.5;
@@ -459,14 +513,16 @@ var layouteditor = function (id) {
           if ((this.selection.y + this.selection.h) > this.height - 5) {
             this.selection.h = this.height - this.selection.y;
           }
-
+          document.getElementById('output_gesutre_angle').innerHTML = (gesture.a-this.gesture.startAngle);       
+          r = r + (gesture.a-this.gesture.prevAngle);
           this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-            'scale(' + 1 + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + 0 + 'deg)';
+            'scale(' + 1 + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + r + 'deg)';
           this.selection.seldom.style.width = this.selection.w + 'px';
           this.selection.seldom.style.height = this.selection.h + 'px';
-
+          this.selection.r = r;
           this.selection.realtimeUpdatePos();
           this.gesture.prevDistance = this.gesture.distance;
+          this.gesture.prevAngle = gesture.a;
         }
       }
     }
@@ -477,29 +533,40 @@ var layouteditor = function (id) {
     //this.getEvent(e);
     debug.log("onDown")
     debug.log("e.target.getAttribute('id')=" + e.target.getAttribute('id'));
-    if (e.target.classList.contains('resize-handle') ||
-      (e.type == "touchstart" && e.target.classList.contains('resizebig-handle'))) {
-      debug.log("resize start");
+    if (e.target.classList.contains('rotate-handle') ||
+      (e.type == "touchstart" && e.target.classList.contains('rotatebig-handle'))) {
+      debug.log("rotate start");
       debug.log(e.target.parentNode.parentNode.getAttribute('id'));
-      this.resizestart = true;
-      this.dragstart = false;
-      this.expectResize = parseInt(e.target.getAttribute("resizehandler"));
-    } else if (e.target.classList.contains('selshape')) {
-      this.dragstart = true;
+      this.rotatestart = true;
       this.resizestart = false;
-      debug.log("drag start");
-      var mouse = this.getEvent(e);
-      var preSel = objectFindByKey(shapes, 'selDomId', e.target.getAttribute('id'));
-      this.dragoffx = mouse.x - preSel.x;
-      this.dragoffy = mouse.y - preSel.y;
-      this.target = e.target;
-      extend(this.preMouse, mouse);
-      extend(this.preSel, preSel);
-    } else {
-      debug.log("Unknown event")
-      debug.log(e.target.classList);
-      return;
-    }
+      this.dragstart = false;
+      if (mySel) document.querySelector('#' + mySel.selDomId + ' .rotate-handle').classList.add('rotate-handle-active');
+    } else
+      if (e.target.classList.contains('resize-handle') ||
+        (e.type == "touchstart" && e.target.classList.contains('resizebig-handle'))) {
+        debug.log("resize start");
+        debug.log(e.target.parentNode.parentNode.getAttribute('id'));
+        this.rotatestart = false;
+        this.resizestart = true;
+        this.dragstart = false;
+        this.expectResize = e.target.getAttribute("resizehandler");
+      } else if (e.target.classList.contains('selshape')) {
+        this.rotatestart = false;
+        this.dragstart = true;
+        this.resizestart = false;
+        debug.log("drag start");
+        var mouse = this.getEvent(e);
+        var preSel = objectFindByKey(shapes, 'selDomId', e.target.getAttribute('id'));
+        this.dragoffx = mouse.x - preSel.x;
+        this.dragoffy = mouse.y - preSel.y;
+        this.target = e.target;
+        extend(this.preMouse, mouse);
+        extend(this.preSel, preSel);
+      } else {
+        debug.log("Unknown event")
+        debug.log(e.target.classList);
+        return;
+      }
   }
   CanvasState.prototype.checkSelection = function (e) {
     if (e.target.classList.contains('selshape')) {
@@ -526,6 +593,9 @@ var layouteditor = function (id) {
       this.checkSelection(e);
     }
     */
+    if (this.rotating || this.rotatestart) {
+      if (mySel) document.querySelector('#' + mySel.selDomId + ' .rotate-handle').classList.remove('rotate-handle-active');
+    }
     if (!this.gesturing) this.checkSelection(e);
     if (this.dragging == true) {
       //mySel.seldom.style.cursor = 'auto';
@@ -534,6 +604,8 @@ var layouteditor = function (id) {
     this.dragging = false;
     this.resizeing = false;
     this.resizestart = false;
+    this.rotating = false;
+    this.rotatestart = false;
     this.gesturing = false;
   }
   CanvasState.prototype.onEscapeUp = function (e) {
@@ -541,19 +613,25 @@ var layouteditor = function (id) {
     if (this.dragging == true) {
       //mySel.seldom.style.cursor = 'auto';
     }
+    if (this.rotating || this.rotatestart) {
+      if (mySel) document.querySelector('#' + mySel.selDomId + ' .rotate-handle').classList.remove('rotate-handle-active');
+    }
     //this.dragstart = false;
     this.dragging = false;
     this.resizeing = false;
     this.resizestart = false;
     this.gesturing = false;
+    this.rotating = false;
+    this.rotatestart = false;
   }
   CanvasState.prototype.onMove = function (e) {
     var mouse = this.getEvent(e);
     debug.log("onMove")
     debug.log("onMove this.dragstart=" + this.dragstart)
     debug.log("onMove this.resizestart=" + this.resizestart)
+    debug.log("onMove this.rotatestart=" + this.rotatestart)
 
-    if (this.dragstart || this.resizestart) {
+    if (this.dragstart || this.resizestart || this.rotatestart) {
       if (this.dragstart) {
         if (this.selection == null) {
           console.warn("There is not in selection")
@@ -635,7 +713,7 @@ var layouteditor = function (id) {
       }
 
       this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + r + 'deg)';
+        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + this.selection.r + 'deg)';
 
       // update the posiion attributes
       // target.setAttribute('data-x', x);
@@ -643,101 +721,338 @@ var layouteditor = function (id) {
       this.selection.realtimeUpdatePos();
       debug.log("noMove end")
     } else if (this.resizestart) {
-      s.dragstart = false;
-      s.dragging = false;
-      s.resizeing = true;
-      var oldx = this.selection.x;
-      var oldy = this.selection.y;
-      var oldx_w = this.selection.x + this.selection.w;
-      var oldy_h = this.selection.y + this.selection.h;
-      var oldw = this.selection.w;
-      var oldh = this.selection.h;
-      // 0  1  2
-      // 3     4
-      // 5  6  7
-      var fixright = false;
-      var fixtop = false;
-      var fixbottom = false;
-      var fixleft = false;
-      debug.log("this.expectResize=" + this.expectResize)
-      switch (this.expectResize) {
-        case 0:
-          this.selection.x = mouse.x;
-          this.selection.y = mouse.y;
-          this.selection.w += oldx - this.selection.x;
-          this.selection.h += oldy - this.selection.y;
-          fixright = true;
-          fixbottom = true;
-          break;
-        case 1:
-          this.selection.y = mouse.y;
-          this.selection.h += oldy - mouse.y;
-          fixbottom = true;
-          break;
-        case 2:
-          this.selection.y = mouse.y;
-          this.selection.w = mouse.x - oldx;
-          this.selection.h += oldy - mouse.y;
-          fixbottom = true;
-          break;
-        case 3:
-          this.selection.x = mouse.x;
-          this.selection.w += oldx - mouse.x;
-          fixright = true;
-          break;
-        case 4:
-          this.selection.w = mouse.x - oldx;
-          break;
-        case 5:
-          this.selection.x = mouse.x;
-          this.selection.w += oldx - mouse.x;
-          this.selection.h = mouse.y - oldy;
-          fixright = true;
-          break;
-        case 6:
-          this.selection.h = mouse.y - oldy;
-          break;
-        case 7:
-          this.selection.w = mouse.x - oldx;
-          this.selection.h = mouse.y - oldy;
-          break;
-      }
-      if (this.selection.w < 1) {
-        this.selection.w = 1;
-        this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
-      }
-      if (this.selection.h < 1) {
-        this.selection.h = 1;
-        this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
+
+      var r = this.selection.r;
+
+      if (r === 0) {
+        s.dragstart = false;
+        s.dragging = false;
+        s.resizeing = true;
+        var oldx = this.selection.x;
+        var oldy = this.selection.y;
+        var oldx_w = this.selection.x + this.selection.w;
+        var oldy_h = this.selection.y + this.selection.h;
+        var oldw = this.selection.w;
+        var oldh = this.selection.h;
+        // 0  1  2   // tl   top  tr
+        // 3     4   // left  c   right
+        // 5  6  7   // bl  bottom  br
+        var fixright = false;
+        var fixtop = false;
+        var fixbottom = false;
+        var fixleft = false;
+        debug.log("this.expectResize=" + this.expectResize)
+        switch (this.expectResize) {
+          case 0:
+          case 'tl':
+            this.selection.x = mouse.x;
+            this.selection.y = mouse.y;
+            this.selection.w += oldx - this.selection.x;
+            this.selection.h += oldy - this.selection.y;
+            fixright = true;
+            fixbottom = true;
+            break;
+          case 1:
+          case 'top':
+            this.selection.y = mouse.y;
+            this.selection.h += oldy - mouse.y;
+            fixbottom = true;
+            break;
+          case 2:
+          case 'tr':
+            this.selection.y = mouse.y;
+            this.selection.w = mouse.x - oldx;
+            this.selection.h += oldy - mouse.y;
+            fixbottom = true;
+            break;
+          case 3:
+          case 'left':
+            this.selection.x = mouse.x;
+            this.selection.w += oldx - mouse.x;
+            fixright = true;
+            break;
+          case 4:
+          case 'right':
+            this.selection.w = mouse.x - oldx;
+            break;
+          case 5:
+          case 'bl':
+            this.selection.x = mouse.x;
+            this.selection.w += oldx - mouse.x;
+            this.selection.h = mouse.y - oldy;
+            fixright = true;
+            break;
+          case 6:
+          case 'bottom':
+            this.selection.h = mouse.y - oldy;
+            break;
+          case 7:
+          case 'br':
+            this.selection.w = mouse.x - oldx;
+            this.selection.h = mouse.y - oldy;
+            break;
+        }
+        if (this.selection.w < 1) {
+          this.selection.w = 1;
+          this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
+        }
+        if (this.selection.h < 1) {
+          this.selection.h = 1;
+          this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
+        }
+
+        if (this.selection.w < 5 && this.selection.h < 5) {
+          this.selection.w = this.selection.h = 5;
+          this.selection.x = (fixright == true) ? oldx_w - 5 : oldx;
+          this.selection.y = (fixbottom == true) ? oldy_h - 5 : oldy;
+        }
+        if (fixright && this.selection.x < 5) {
+          this.selection.x = 0;
+          this.selection.w = oldx_w - this.selection.x;
+        }
+        if (fixbottom && this.selection.y < 5) {
+          this.selection.y = 0;
+          this.selection.h = oldy_h - this.selection.y;
+        }
+        if ((this.selection.x + this.selection.w) > this.width - 5) {
+          this.selection.w = this.width - this.selection.x;
+
+        }
+        if ((this.selection.y + this.selection.h) > this.height - 5) {
+          this.selection.h = this.height - this.selection.y;
+        }
+      } else {
+        s.dragstart = false;
+        s.dragging = false;
+        s.resizeing = true;
+        s.rotatestart = false;
+        s.rotating = false;
+
+        var oldx = this.selection.x;
+        var oldy = this.selection.y;
+        var oldx_w = this.selection.x + this.selection.w;
+        var oldy_h = this.selection.y + this.selection.h;
+
+        var oldw = this.selection.w;
+        var oldh = this.selection.h;
+
+        var old_cx = this.selection.x + this.selection.w * 0.5;
+        var old_cy = this.selection.y + this.selection.h * 0.5;
+
+        var change = { x: 0, y: 0 };
+        var xMin = this.selection.x;
+        var xMax = this.selection.x + this.selection.w;
+        var yMin = this.selection.y;
+        var yMax = this.selection.y + this.selection.h;
+        var p_tl = { x: xMin, y: yMin };
+        var p_tr = { x: xMax, y: yMin };
+        var p_br = { x: xMax, y: yMax };
+        var p_bl = { x: xMin, y: yMax };
+        var p_lc = { x: xMin, y: yMin + (yMax - yMin) / 2 };
+        var p_rc = { x: xMax, y: yMin + (yMax - yMin) / 2 };
+        var p_tc = { x: xMin + (xMax - xMin) / 2, y: yMin };
+        var p_bc = { x: xMin + (xMax - xMin) / 2, y: yMax };
+        var _center = calcMidPoint(p_tl, p_br); //{ x: old_cx, y: old_cy };
+
+        p_tl = calcRotate(r, p_tl, _center);
+        p_tr = calcRotate(r, p_tr, _center);
+        p_br = calcRotate(r, p_br, _center);
+        p_bl = calcRotate(r, p_bl, _center);
+        p_lc = calcRotate(r, p_lc, _center);
+        p_rc = calcRotate(r, p_rc, _center);
+        p_tc = calcRotate(r, p_tc, _center);
+        p_bc = calcRotate(r, p_bc, _center);
+
+        var cursor = calcRotate(360 - r, mouse, _center);
+        var direction = this.expectResize;
+        console.log("mouse.x=" + mouse.x);
+        console.log("cursor.x=" + cursor.x);
+
+        var origins = {
+          tl: p_br,
+          tr: p_bl,
+          br: p_tl,
+          bl: p_tr,
+          top: p_bc,
+          right: p_lc,
+          bottom: p_tc,
+          left: p_rc
+        };
+        var origin = origins[direction];
+        console.log("origin.x=" + origin.x + "," + origin.y);
+        console.log("p_lc=" + p_lc.x + "," + p_lc.y)
+        console.log("p_rc=" + p_rc.x + "," + p_rc.y)
+        if (["tr", "right", "br"].indexOf(direction) != -1) {
+          console.log("right side change");
+          change.x = cursor.x - calcRotate(360 - r, p_rc, _center).x;
+        }
+        if (["tl", "left", "bl"].indexOf(direction) != -1) {
+          console.log("left side change");
+          change.x = calcRotate(360 - r, p_lc, _center).x - cursor.x;
+        }
+        if (["tl", "top", "tr"].indexOf(direction) != -1) {
+          console.log("top side change");
+          change.y = calcRotate(360 - r, p_tc, _center).y - cursor.y;
+        }
+        if (["bl", "bottom", "br"].indexOf(direction) != -1) {
+          console.log("bottom side change");
+          change.y = cursor.y - calcRotate(360 - r, p_bc, _center).y;
+        }
+        var change_ratio_x = calcChangePercent(change.x, oldw);
+        var change_ratio_y = calcChangePercent(change.y, oldh);
+
+        console.log("x changes in " + change.x + " px (" + change_ratio_x + ")%");
+        console.log("y changes in " + change.y + " px (" + change_ratio_y + ")%");
+
+        //calculate new center and top-left point
+        var new_center = doScale(change_ratio_x, change_ratio_y, r, p_tl, p_br, oldw, oldh, _center, origin);
+        var new_tl = calcRotate(360 - r, new_center.tl, new_center);//for new center
+        console.log("p_tl.x=" + p_tl.x);
+        console.log("p_tl.y=" + p_tl.y);
+        console.log("new_center.tl.x=" + new_center.tl.x);
+        console.log("new_center.tl.y=" + new_center.tl.y);
+        console.log("old_center=");
+        console.log(_center);
+        console.log("new_center=");
+        console.log(new_center);
+        console.log("new_tl=" + new_tl.x + "," + new_tl.y);
+
+        this.selection.w = new_center.width;
+        this.selection.h = new_center.height;
+        this.selection.x = new_tl.x;
+        this.selection.y = new_tl.y;
+        // 0  1  2   // tl   top  tr
+        // 3     4   // left  c   right
+        // 5  6  7   // bl  bottom  br
+        if(0){
+          var fixright = false;
+          var fixtop = false;
+          var fixbottom = false;
+          var fixleft = false;
+          debug.log("this.expectResize=" + this.expectResize)
+          switch (this.expectResize) {
+            case 0:
+            case 'tl':
+              this.selection.x = mouse.x;
+              this.selection.y = mouse.y;
+              this.selection.w += oldx - this.selection.x;
+              this.selection.h += oldy - this.selection.y;
+              fixright = true;
+              fixbottom = true;
+              break;
+            case 1:
+            case 'top':
+              //this.selection.y = mouse.y;
+              //this.selection.h += oldy - mouse.y;
+              //fixbottom = true;
+              this.selection.h = new_center.height;
+              this.selection.x = new_tl.x;
+              this.selection.y = new_tl.y;
+              break;
+            case 2:
+            case 'tr':
+              this.selection.y = mouse.y;
+              this.selection.w = mouse.x - oldx;
+              this.selection.h += oldy - mouse.y;
+              fixbottom = true;
+              break;
+            case 3:
+            case 'left':
+              //this.selection.x = mouse.x;
+              //this.selection.w += oldx - mouse.x;
+              //fixright = true;
+              this.selection.w = new_center.width;
+              this.selection.x = new_tl.x;
+              this.selection.y = new_tl.y;
+              fixright = true;
+              break;
+            case 4:
+            case 'right':
+              //this.selection.w = mouse.x - oldx;
+              this.selection.w = new_center.width;
+              this.selection.x = new_tl.x;
+              this.selection.y = new_tl.y;
+              break;
+            case 5:
+            case 'bl':
+              this.selection.x = mouse.x;
+              this.selection.w += oldx - mouse.x;
+              this.selection.h = mouse.y - oldy;
+              fixright = true;
+              break;
+            case 6:
+            case 'bottom':
+              //this.selection.h = mouse.y - oldy;
+              this.selection.h = new_center.height;
+              this.selection.x = new_tl.x;
+              this.selection.y = new_tl.y;
+              break;
+            case 7:
+            case 'br':
+              //this.selection.w = mouse.x - oldx;
+              //this.selection.h = mouse.y - oldy;
+              this.selection.w = new_center.width;
+              this.selection.h = new_center.height;
+              this.selection.x = new_tl.x;
+              this.selection.y = new_tl.y;
+              break;
+          }
+        }
+        if (this.selection.w < 1) {
+          this.selection.w = 1;
+          this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
+        }
+        if (this.selection.h < 1) {
+          this.selection.h = 1;
+          this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
+        }
+
+        if (this.selection.w < 5 && this.selection.h < 5) {
+          this.selection.w = this.selection.h = 5;
+          this.selection.x = (fixright == true) ? oldx_w - 5 : oldx;
+          this.selection.y = (fixbottom == true) ? oldy_h - 5 : oldy;
+        }
+        if (fixright && this.selection.x < 5) {
+          this.selection.x = 0;
+          this.selection.w = oldx_w - this.selection.x;
+        }
+        if (fixbottom && this.selection.y < 5) {
+          this.selection.y = 0;
+          this.selection.h = oldy_h - this.selection.y;
+        }
+        if ((this.selection.x + this.selection.w) > this.width - 5) {
+          this.selection.w = this.width - this.selection.x;
+
+        }
+        if ((this.selection.y + this.selection.h) > this.height - 5) {
+          this.selection.h = this.height - this.selection.y;
+        }
       }
 
-      if (this.selection.w < 5 && this.selection.h < 5) {
-        this.selection.w = this.selection.h = 5;
-        this.selection.x = (fixright == true) ? oldx_w - 5 : oldx;
-        this.selection.y = (fixbottom == true) ? oldy_h - 5 : oldy;
-      }
-      if (fixright && this.selection.x < 5) {
-        this.selection.x = 0;
-        this.selection.w = oldx_w - this.selection.x;
-      }
-      if (fixbottom && this.selection.y < 5) {
-        this.selection.y = 0;
-        this.selection.h = oldy_h - this.selection.y;
-      }
-      if ((this.selection.x + this.selection.w) > this.width - 5) {
-        this.selection.w = this.width - this.selection.x;
-
-      }
-      if ((this.selection.y + this.selection.h) > this.height - 5) {
-        this.selection.h = this.height - this.selection.y;
-      }
       this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + r + 'deg)';
+        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + this.selection.r + 'deg)';
       this.selection.seldom.style.width = (scale * this.selection.w) + 'px';
       this.selection.seldom.style.height = (scale * this.selection.h) + 'px';
       // update the posiion attributes
       //target.setAttribute('data-x', x);
       //target.setAttribute('data-y', y);
+      this.selection.realtimeUpdatePos();
+    } else if (this.rotatestart) {
+      s.dragstart = false;
+      s.dragging = false;
+      s.resizeing = false;
+      s.rotating = true;
+
+      var oldx_w = this.selection.x + this.selection.w;
+      var oldy_h = this.selection.y + this.selection.h;
+      var old_cx = this.selection.x + this.selection.w * 0.5;
+      var old_cy = this.selection.y + this.selection.h * 0.5;
+      var diffx = mouse.x - old_cx;
+      var diffy = mouse.y - old_cy;
+      var deg = 90 + getDegree(Math.atan2(diffy, diffx));
+      this.selection.r = deg;
+      this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
+        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + deg + 'deg)';
       this.selection.realtimeUpdatePos();
     }
   }
@@ -828,7 +1143,7 @@ var layouteditor = function (id) {
   };
   Shape.prototype.add = function (shape) {
     shapes.push(shape);
-    var selshapehtml = '<div id="selshape-' + this.id + '" zidx="' + this.id + '" class="selshape"><div id="resize-' + this.id + '" zidx="' + this.id + '" class="resize-handlers"></div></div>';
+    var selshapehtml = '<div id="selshape-' + this.id + '" zidx="' + this.id + '" class="selshape"><div id="rotate-' + this.id + '" zidx="' + this.id + '" class="rotate-handler"></div><div id="resize-' + this.id + '" zidx="' + this.id + '" class="resize-handlers"></div></div>';
     appendHtml(dom_dragMain, selshapehtml);
     this.seldom = document.getElementById('selshape-' + this.id);
     var shapehtml = '<div id="shape-' + this.id + '" class="shape"></div>';
@@ -943,6 +1258,16 @@ var layouteditor = function (id) {
     });
 
   };
+  Shape.prototype.rotate = function (degree) {
+    this.rt = degree;
+    var r = 0;
+    if (degree != null && degree != "") {
+      r = parseFloat(degree);
+      r = (r + 360) % 360;
+    }
+    this.r = r;
+    this.draw();
+  };
   var build = function () {
     build.bindListener();
     return this;
@@ -993,19 +1318,19 @@ var layouteditor = function (id) {
       }
     }, false /* useCapture */);
     addListenerMulti(dom_dragMain, "mousemove", function (e) {
-      if (s.dragging == true || s.resizeing == true) {
+      if (s.dragging == true || s.resizeing == true || s.rotating == true) {
         debug.log("escape move event");
         s.onMove(e);
       }
     }, false /* useCapture */);
     addListenerMulti(dom_dragMain, "mouseup", function (e) {
-      if (s.dragging == true || s.resizeing == true || s.gesturing == true) {
+      if (s.dragging == true || s.resizeing == true || s.gesturing == true || s.rotating == true) {
         debug.log("escape up event");
         s.onEscapeUp(e);
       }
     }, false /* useCapture */);
     addListenerMulti(dom_dragMain, "touchend", function (e) {
-      if (s.dragging == true || s.resizeing == true || s.gesturing == true) {
+      if (s.dragging == true || s.resizeing == true || s.gesturing == true || s.rotating == true) {
         debug.log("escape touchend event");
         s.onTouchEnd(e);
       }
@@ -1048,30 +1373,39 @@ var layouteditor = function (id) {
     }
     return mySel;
   }
+  // 0  1  2   // tl   top  tr
+  // 3     4   // left  c   right
+  // 5  6  7   // bl  bottom  br
   build.drawSelection = function () {
     if (mySel !== null) {
       document.getElementById(mySel.selDomId).classList.add('selshape_active');
       var elm_resize_handlers = document.querySelector('#' + mySel.selDomId + ' .resize-handlers');
       if (supportsTouch == true) {
-        var html_resize_handler_big = '<div id="resizebig-' + mySel.id + '-0" resizehandler="0" class="resizebig-handle resizebig-handle-0"></div>\
-        <div id="resizebig-' + mySel.id + '-1" resizehandler="1" class="resizebig-handle resizebig-handle-1"></div>\
-        <div id="resizebig-' + mySel.id + '-2" resizehandler="2" class="resizebig-handle resizebig-handle-2"></div>\
-        <div id="resizebig-' + mySel.id + '-3" resizehandler="3" class="resizebig-handle resizebig-handle-3"></div>\
-        <div id="resizebig-' + mySel.id + '-4" resizehandler="4" class="resizebig-handle resizebig-handle-4"></div>\
-        <div id="resizebig-' + mySel.id + '-5" resizehandler="5" class="resizebig-handle resizebig-handle-5"></div>\
-        <div id="resizebig-' + mySel.id + '-6" resizehandler="6" class="resizebig-handle resizebig-handle-6"></div>\
-        <div id="resizebig-' + mySel.id + '-7" resizehandler="7" class="resizebig-handle resizebig-handle-7"></div>';
+        var html_resize_handler_big = '<div id="resizebig-' + mySel.id + '-0" resizehandler="tl" class="resizebig-handle resizebig-handle-0"></div>\
+        <div id="resizebig-' + mySel.id + '-1" resizehandler="top" class="resizebig-handle resizebig-handle-1"></div>\
+        <div id="resizebig-' + mySel.id + '-2" resizehandler="tr" class="resizebig-handle resizebig-handle-2"></div>\
+        <div id="resizebig-' + mySel.id + '-3" resizehandler="left" class="resizebig-handle resizebig-handle-3"></div>\
+        <div id="resizebig-' + mySel.id + '-4" resizehandler="right" class="resizebig-handle resizebig-handle-4"></div>\
+        <div id="resizebig-' + mySel.id + '-5" resizehandler="bl" class="resizebig-handle resizebig-handle-5"></div>\
+        <div id="resizebig-' + mySel.id + '-6" resizehandler="bottom" class="resizebig-handle resizebig-handle-6"></div>\
+        <div id="resizebig-' + mySel.id + '-7" resizehandler="br" class="resizebig-handle resizebig-handle-7"></div>';
         appendHtml(elm_resize_handlers, html_resize_handler_big);
       }
-      var html_resize_handlers = '<div id="resize-' + mySel.id + '-0" resizehandler="0" class="resize-handle resize-handle-0"></div>\
-        <div id="resize-' + mySel.id + '-1" resizehandler="1" class="resize-handle resize-handle-1"></div>\
-        <div id="resize-' + mySel.id + '-2" resizehandler="2" class="resize-handle resize-handle-2"></div>\
-        <div id="resize-' + mySel.id + '-3" resizehandler="3" class="resize-handle resize-handle-3"></div>\
-        <div id="resize-' + mySel.id + '-4" resizehandler="4" class="resize-handle resize-handle-4"></div>\
-        <div id="resize-' + mySel.id + '-5" resizehandler="5" class="resize-handle resize-handle-5"></div>\
-        <div id="resize-' + mySel.id + '-6" resizehandler="6" class="resize-handle resize-handle-6"></div>\
-        <div id="resize-' + mySel.id + '-7" resizehandler="7" class="resize-handle resize-handle-7"></div>';
+      var html_resize_handlers = '<div id="resize-' + mySel.id + '-0" resizehandler="tl" class="resize-handle resize-handle-0"></div>\
+        <div id="resize-' + mySel.id + '-1" resizehandler="top" class="resize-handle resize-handle-1"></div>\
+        <div id="resize-' + mySel.id + '-2" resizehandler="tr" class="resize-handle resize-handle-2"></div>\
+        <div id="resize-' + mySel.id + '-3" resizehandler="left" class="resize-handle resize-handle-3"></div>\
+        <div id="resize-' + mySel.id + '-4" resizehandler="right" class="resize-handle resize-handle-4"></div>\
+        <div id="resize-' + mySel.id + '-5" resizehandler="bl" class="resize-handle resize-handle-5"></div>\
+        <div id="resize-' + mySel.id + '-6" resizehandler="bottom" class="resize-handle resize-handle-6"></div>\
+        <div id="resize-' + mySel.id + '-7" resizehandler="br" class="resize-handle resize-handle-7"></div>';
       appendHtml(elm_resize_handlers, html_resize_handlers);
+
+      var elm_rotate_handlers = document.querySelector('#' + mySel.selDomId + ' .rotate-handler');
+      var html_rotate_handlers = '<div id="rotateconnecterline-' + mySel.id + '-0" class="rotate-connecterline"></div>\
+        <div id="rotatebig-' + mySel.id + '-0" class="rotatebig-handle"></div>\
+        <div id="rotate-' + mySel.id + '-0" class="rotate-handle"></div>';
+      appendHtml(elm_rotate_handlers, html_rotate_handlers);
     }
 
   };
@@ -1084,6 +1418,9 @@ var layouteditor = function (id) {
       var elm_resize_handlers = document.querySelector('#' + shape.getAttribute('id') + ' .resize-handlers');
       if (elm_resize_handlers)
         elm_resize_handlers.innerHTML = "";
+      var elm_rotate_handlers = document.querySelector('#' + shape.getAttribute('id') + ' .rotate-handler');
+      if (elm_rotate_handlers)
+        elm_rotate_handlers.innerHTML = "";
     }
     build.restoreOrder();
   };
@@ -1095,6 +1432,11 @@ var layouteditor = function (id) {
         return -1;
       }
     });
+  };
+  build.rotate = function (deg) {
+    if (mySel !== null) {
+      mySel.rotate(deg);
+    }
   };
   build.add = function (type, jsonObj) {
     debug.log('Add a ' + type + ' element');
@@ -1141,6 +1483,109 @@ var layouteditor = function (id) {
       }
     };
   }
+
+  //for global function
+  function getRadian(degree) {
+    return degree * Math.PI / 180;
+  }
+  function getDegree(radians) {
+    return radians * 180 / Math.PI;
+  }
+  function calcChangePercent(pixel, length) {
+    if (pixel === 0) {
+      return 1;
+    }
+    return 1 + (pixel / length);
+  }
+  function calcRotate(degree, point, center) {
+    var obj = { x: point.x, y: point.y };
+    var angle = degree;
+    var x, y;
+    if (center == null) {
+      center = { x: 0, y: 0 };
+    }
+    if (point.x === center.x && point.y === center.y) {
+      return point;
+    }
+    angle *= Math.PI / 180;
+    obj.x -= center.x;
+    obj.y -= center.y;
+    x = (obj.x * (Math.cos(angle))) - (obj.y * Math.sin(angle));
+    y = (obj.x * (Math.sin(angle))) + (obj.y * Math.cos(angle));
+    obj.x = x + center.x;
+    obj.y = y + center.y;
+    return obj;
+  };
+  function calcScale(x_ratio, y_ratio, point, origin) {
+    var obj = { x: point.x, y: point.y };
+    if (origin == null) {
+      origin = { x: 0, y: 0 };
+    }
+    obj.x += (point.x - origin.x) * (x_ratio - 1);
+    obj.y += (point.y - origin.y) * (y_ratio - 1);
+    return obj;
+  };
+  function pointsToScale(origin) {
+    switch (origin) {
+      case this.tc:
+        return [this.bl, this.bc, this.br, this.rc, this.lc];
+      case this.rc:
+        return [this.bl, this.lc, this.tl, this.tc, this.bc];
+      case this.bc:
+        return [this.tl, this.tc, this.tr, this.rc, this.lc];
+      case this.lc:
+        return [this.br, this.rc, this.tr, this.bc, this.tc];
+      case this.tl://
+        return [this.tr, this.br, this.bl, this.tc, this.rc, this.bc, this.lc];
+      case this.tr:
+        return [this.tl, this.br, this.bl, this.tc, this.rc, this.bc, this.lc];
+      case this.br://
+        return [this.tl, this.tr, this.bl, this.tc, this.rc, this.bc, this.lc];
+      case this.bl:
+        return [this.tl, this.tr, this.br, this.tc, this.rc, this.bc, this.lc];
+      default:
+        return [this.tl, this.tr, this.br, this.bl, this.tc, this.rc, this.bc, this.lc];
+    }
+  }
+  function calcMidPoint(a, b) {
+    var p = 0.5;
+    return { x: (a.x + (b.x - a.x) * p), y: (a.y + (b.y - a.y) * p) };
+  }
+  function calcRealScale(x_ratio, y_ratio, point, degree, old_center, origin) {
+    var obj = { x: point.x, y: point.y };
+    if (degree !== 0) {
+      obj = calcRotate(360 - degree, obj, old_center);
+    }
+    obj = calcScale(x_ratio, y_ratio, obj, calcRotate(360 - degree, origin, old_center))
+    if (degree !== 0) {
+      obj = calcRotate(degree, obj, old_center);
+    }
+    return obj
+  }
+  function doScale(x_ratio, y_ratio, degree, tl, br, width, height, old_center, origin) {
+    var obj = { x: old_center.x, y: old_center.y, width: width, height: height, tl: null, br: null };
+
+    var point = { x: tl.x, y: tl.y };
+    var newtl = calcRealScale(x_ratio, y_ratio, point, degree, old_center, origin);
+
+    point = { x: br.x, y: br.y };
+    var newbr = calcRealScale(x_ratio, y_ratio, point, degree, old_center, origin);
+
+    obj.tl = newtl;
+    obj.br = newbr;
+    obj.width *= x_ratio;
+    obj.height *= y_ratio;
+    obj.x = calcMidPoint(newtl, newbr).x;
+    obj.y = calcMidPoint(newtl, newbr).y;
+    if (obj.width === 0) {
+      obj.width = 1;
+    }
+    if (obj.height === 0) {
+      obj.height = 1;
+    }
+    return obj;
+  };
+
 };
 
 function createEditor() {
