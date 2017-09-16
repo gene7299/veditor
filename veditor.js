@@ -649,7 +649,8 @@ var layouteditor = function (id) {
           console.warn("Selection is diffenet from now - this.dragstart=false");
           console.log("this.selection.selDomId=" + this.selection.selDomId);
           console.log(" e.target.getAttribute('id')=" + e.target.getAttribute('id'));
-          this.dragstart = false;
+          if(this.dragging !== true)
+            this.dragstart = false;
           return;
         }
 
@@ -985,6 +986,7 @@ var layouteditor = function (id) {
       this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
         'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + deg + 'deg)';
       this.selection.realtimeUpdatePos();
+      updateGripCursors(this.selection.selDomId,this.selection.r);
     }
   }
 
@@ -1101,6 +1103,10 @@ var layouteditor = function (id) {
     }
   };
   Shape.prototype.setPosition = function () {
+    this.updateSelectionPos();
+    this.realtimeUpdatePos();
+  };
+  Shape.prototype.updateSelectionPos = function (){
     var seldom = this.seldom;
     seldom.style.width = this.w + 'px';
     seldom.style.height = this.h + 'px';
@@ -1111,7 +1117,6 @@ var layouteditor = function (id) {
     seldom.setAttribute('data-y', this.y);
     seldom.setAttribute('data-r', this.r);
     seldom.setAttribute('data-scale', this.scale);
-    this.realtimeUpdatePos();
   };
   Shape.prototype.realtimeUpdatePos = function () {
     var dom = this.canvasdom;
@@ -1269,7 +1274,7 @@ var layouteditor = function (id) {
     addListenerMulti(dom_dragMain, "mouseleave", function (e) {
       if (s.dragging == true) {
         debug.log("escape leave event");
-        s.onEscapeUp(e);
+        //s.onEscapeUp(e);
       }
     }, false /* useCapture */);
     addListenerMulti(dom_dragMain, "touchmove", function (e) {
@@ -1304,9 +1309,37 @@ var layouteditor = function (id) {
     }
     return mySel;
   }
-  // 0  1  2   // tl   top  tr
-  // 3     4   // left  c   right
-  // 5  6  7   // bl  bottom  br
+  function updateGripCursors(id,angle) {
+    var selectorGrips = {
+        'nw' : 'tl', //-45 //315
+        'n' : 'top', //0
+        'ne': 'tr',  //45
+        'e': 'right', //90
+        'se': 'br',  //135
+        's' : 'bottom', //180
+        'sw' : 'bl',  //225
+        'w' : 'left'  //270        
+    }
+    var dir_arr = [];
+    var steps = Math.round(angle / 45);
+    if(steps < 0) steps += 8;
+    for (var dir in selectorGrips) {
+      dir_arr.push(dir);
+    }
+    while(steps > 0) {
+      dir_arr.push(dir_arr.shift());
+      steps--;
+    }
+    var i = 0;
+    for (var dir in selectorGrips) {
+      console.log("resizeHandlers["+dir+"]="+selectorGrips[dir])
+      document.querySelector("#" + id + " .resize-handle[resizehandler='"+selectorGrips[dir]+"']").setAttribute('style', ('cursor:' + dir_arr[i] + '-resize'));
+      i++;
+    };
+  };
+  // 0  1  2   // tl   top  tr      // nw   n   ne
+  // 3     4   // left  c   right   // s        e
+  // 5  6  7   // bl  bottom  br    // sw   s   se
   build.drawSelection = function () {
     if (mySel !== null) {
       document.getElementById(mySel.selDomId).classList.add('selshape_active');
@@ -1337,6 +1370,7 @@ var layouteditor = function (id) {
         <div id="rotatebig-' + mySel.id + '-0" class="rotatebig-handle"></div>\
         <div id="rotate-' + mySel.id + '-0" class="rotate-handle"></div>';
       appendHtml(elm_rotate_handlers, html_rotate_handlers);
+      updateGripCursors(mySel.selDomId,mySel.r);
     }
 
   };
