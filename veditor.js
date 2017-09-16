@@ -217,6 +217,7 @@ var layouteditor = function (id) {
       prevAngle: 0       // angle of the previous gesture event
     };
 
+    this.lastminsize = {did:false,d:null/*direction*/};
     /*
     this.clicked = null;
     this.e = null;
@@ -607,6 +608,7 @@ var layouteditor = function (id) {
     this.rotating = false;
     this.rotatestart = false;
     this.gesturing = false;
+    this.lastminsize.did = false;
   }
   CanvasState.prototype.onEscapeUp = function (e) {
     debug.log("onEscapeUp");
@@ -623,6 +625,7 @@ var layouteditor = function (id) {
     this.gesturing = false;
     this.rotating = false;
     this.rotatestart = false;
+    this.lastminsize.did = false;
   }
   CanvasState.prototype.onMove = function (e) {
     var mouse = this.getEvent(e);
@@ -830,14 +833,8 @@ var layouteditor = function (id) {
 
         var oldx = this.selection.x;
         var oldy = this.selection.y;
-        var oldx_w = this.selection.x + this.selection.w;
-        var oldy_h = this.selection.y + this.selection.h;
-
         var oldw = this.selection.w;
         var oldh = this.selection.h;
-
-        var old_cx = this.selection.x + this.selection.w * 0.5;
-        var old_cy = this.selection.y + this.selection.h * 0.5;
 
         var change = { x: 0, y: 0 };
         var xMin = this.selection.x;
@@ -865,8 +862,6 @@ var layouteditor = function (id) {
 
         var cursor = calcRotate(360 - r, mouse, _center);
         var direction = this.expectResize;
-        console.log("mouse.x=" + mouse.x);
-        console.log("cursor.x=" + cursor.x);
 
         var origins = {
           tl: p_br,
@@ -879,23 +874,17 @@ var layouteditor = function (id) {
           left: p_rc
         };
         var origin = origins[direction];
-        console.log("origin.x=" + origin.x + "," + origin.y);
-        console.log("p_lc=" + p_lc.x + "," + p_lc.y)
-        console.log("p_rc=" + p_rc.x + "," + p_rc.y)
+
         if (["tr", "right", "br"].indexOf(direction) != -1) {
-          console.log("right side change");
           change.x = cursor.x - calcRotate(360 - r, p_rc, _center).x;
         }
         if (["tl", "left", "bl"].indexOf(direction) != -1) {
-          console.log("left side change");
           change.x = calcRotate(360 - r, p_lc, _center).x - cursor.x;
         }
         if (["tl", "top", "tr"].indexOf(direction) != -1) {
-          console.log("top side change");
           change.y = calcRotate(360 - r, p_tc, _center).y - cursor.y;
         }
         if (["bl", "bottom", "br"].indexOf(direction) != -1) {
-          console.log("bottom side change");
           change.y = cursor.y - calcRotate(360 - r, p_bc, _center).y;
         }
         var change_ratio_x = calcChangePercent(change.x, oldw);
@@ -907,96 +896,69 @@ var layouteditor = function (id) {
         //calculate new center and top-left point
         var new_center = doScale(change_ratio_x, change_ratio_y, r, p_tl, p_br, oldw, oldh, _center, origin);
         var new_tl = calcRotate(360 - r, new_center.tl, new_center);//for new center
-        console.log("p_tl.x=" + p_tl.x);
-        console.log("p_tl.y=" + p_tl.y);
-        console.log("new_center.tl.x=" + new_center.tl.x);
-        console.log("new_center.tl.y=" + new_center.tl.y);
-        console.log("old_center=");
-        console.log(_center);
-        console.log("new_center=");
-        console.log(new_center);
-        console.log("new_tl=" + new_tl.x + "," + new_tl.y);
 
-        this.selection.w = new_center.width;
-        this.selection.h = new_center.height;
-        this.selection.x = new_tl.x;
-        this.selection.y = new_tl.y;
-        // 0  1  2   // tl   top  tr
-        // 3     4   // left  c   right
-        // 5  6  7   // bl  bottom  br
-        if (1) {
-          var fixright = false;
-          var fixtop = false;
-          var fixbottom = false;
-          var fixleft = false;
-          debug.log("this.expectResize=" + this.expectResize)
-          switch (this.expectResize) {
-            case 0:
-            case 'tl':
-              fixright = true;
-              fixbottom = true;
-              break;
-            case 1:
-            case 'top':
-              fixbottom = true;
-              break;
-            case 2:
-            case 'tr':
-              fixbottom = true;
-              break;
-            case 3:
-            case 'left':
-              fixright = true;
-              break;
-            case 4:
-            case 'right':
-              break;
-            case 5:
-            case 'bl':
-              fixright = true;
-              break;
-            case 6:
-            case 'bottom':
-              break;
-            case 7:
-            case 'br':
-              break;
-          }
-        }
-        if (this.selection.w < 1 && this.selection.h < 1) {
-          this.selection.w = 1;
-          this.selection.h = 1;
-          this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
-          this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
-        } else {
-          if (this.selection.w < 1) {
-            this.selection.w = 1;
-            this.selection.h = oldh;
-            this.selection.x = (fixright == true) ? oldx_w - 1 : oldx;
-            this.selection.y = oldy;
-          }
-          if (this.selection.h < 1) {
-            this.selection.w = oldw;
-            this.selection.h = 1;
-            this.selection.y = (fixbottom == true) ? oldy_h - 1 : oldy;
-            this.selection.x = oldx;
-          }
-        }
+        var new_w = new_center.width;
+        var new_h = new_center.height;
+        var new_x = new_tl.x;
+        var new_y = new_tl.y;
 
-        if (this.selection.w < 5 && this.selection.h < 5) {
-          this.selection.w = this.selection.h = 5;
-          this.selection.x = (fixright == true) ? oldx_w - 5 : oldx;
-          this.selection.y = (fixbottom == true) ? oldy_h - 5 : oldy;
+       
+        // ** check minsize direction **/
+        var minsize = 1;
+        var min_d = "";
+        if(new_w <= minsize){
+          min_d += "w";
         }
-        if (fixright && this.selection.x < 5) {
-          this.selection.x = 0;
-          this.selection.w = oldx_w - this.selection.x;
+        if(new_h <= minsize){
+          min_d += "h";
         }
-        if (fixbottom && this.selection.y < 5) {
-          this.selection.y = 0;
-          this.selection.h = oldy_h - this.selection.y;
+        
+        if(this.lastminsize.did === true){
+          if(this.lastminsize.d !== min_d ){
+            this.lastminsize.did = false;
+            console.log("lastminsize reset!");
+          }
         }
+        if(min_d!=="") 
+            this.lastminsize.d = min_d;   
+        // ** end of check minsize direction **/
+        
+        var minsize_ratio_x = change_ratio_x;
+        var minsize_ratio_y = change_ratio_y;
+
+        if (new_w <= minsize || new_h <=  minsize) {
+          if (new_w <= minsize) {
+            if(this.lastminsize.did === false){
+              console.log("lastminsize w")
+              minsize_ratio_x = minsize/oldw;
+            }else{
+              minsize_ratio_x = 1;
+            }
+          }
+          if (new_h <= minsize) {
+            if(this.lastminsize.did === false){
+              console.log("lastminsize h")
+              minsize_ratio_y = minsize/oldh;
+            }else{
+              minsize_ratio_y = 1;
+            }
+          }
+          this.lastminsize.did = true;
+        }
+        if(min_d!==""){
+          new_center = doScale(minsize_ratio_x, minsize_ratio_y, r, p_tl, p_br, oldw, oldh, _center, origin);
+          new_tl = calcRotate(360 - r, new_center.tl, new_center);//for new center
+          new_w = new_center.width;
+          new_h = new_center.height;
+          new_x = new_tl.x;
+          new_y = new_tl.y;
+        }
+        this.selection.w = new_w;
+        this.selection.h = new_h;
+        this.selection.x = new_x;
+        this.selection.y = new_y;
       }
+
 
       this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
         'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + this.selection.r + 'deg)';
