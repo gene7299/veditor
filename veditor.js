@@ -1380,7 +1380,7 @@ var layouteditor = function (id) {
 
   };
   Shape.prototype.overlap = function(compareShape) {
-    return checkOverlap(this, [compareShape] , null, 0.5);
+    return checkOverlap(this, [compareShape] , null, 0);
   }
   Shape.prototype.rotate = function (degree) {
     this.rt = degree;
@@ -1729,6 +1729,16 @@ var layouteditor = function (id) {
     return pos;
   }
 
+  function findCoordAfterRotateXX(x, y, w, h, oriX, oriY, originDegree, targetDegree) {
+    var pos = [];
+    var point = {x:x,y:y,w:w,h:h}; 
+    var center = {x:x+w/2,y:y+h/2};
+    var obj = calcRotate(targetDegree,point,center);
+    pos[0] = obj.x;
+    pos[1] = obj.y;
+    return pos;
+  };
+
   function findPointInPolygon(point, vs) {
       var xi, xj, yi, yj, intersect,
           x = point[0],
@@ -1786,7 +1796,7 @@ var layouteditor = function (id) {
       var overlap = false;
       var Aret = false;
       var Bret = false;
-      var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.degree);
+      var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
       var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
       for (var i in elmsToCheck) {
           overlap = false;
@@ -1852,8 +1862,8 @@ var layouteditor = function (id) {
       var overlap = false;
       var Aret = false;
       var Bret = false;
-      var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.degree);
-      var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.degree);
+      var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
+      var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
       for (var i in elmsToCheck) {
           overlap = false;
           var s = elmsToCheck[i];
@@ -1868,10 +1878,10 @@ var layouteditor = function (id) {
           }
           if (doCheck === true) {
 
-              var Acoords = getCorners(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.degree);
-              var AcoordsR = getSamplePoints(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.degree);
-              //var Bcoords = getCorners(s.x - checkgap, s.y- checkgap , s.w + 2 * checkgap, s.h + 2 * checkgap, s.degree);
-              //var BcoordsR = getSamplePoints(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.degree);
+              var Acoords = getCorners(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
+              var AcoordsR = getSamplePoints(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
+              //var Bcoords = getCorners(s.x - checkgap, s.y- checkgap , s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
+              //var BcoordsR = getSamplePoints(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
               //check a's round 16 points overlap with s's corner area
               Aret = false;
               Bret = false;
