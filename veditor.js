@@ -240,14 +240,27 @@ var layouteditor = function (id) {
        this.w = b.width;
        this.h = b.height;
    */
-
+    var point = null;
     if (e.type[0] == 'm') {
-      return this.getMouse(e);
+      point = this.getMouse(e);
     } else if (e.type[0] == 't') {
-      return this.getTouch(e);
+      point = this.getTouch(e);
     } else {
       debug.log(e.type + " event");
     }
+    if(point.x < 0 ){
+      point.x = 0;
+    }
+    if(point.y < 0){
+      point.y = 0
+    }
+    if(point.x > this.width){
+      point.x = this.width;
+    }
+    if(point.y > this.height){
+      point.y = this.height;
+    }
+    return point;
   }
   CanvasState.prototype.getMouse = function (e) {
     var element = this.selectionCanvas,
@@ -514,14 +527,9 @@ var layouteditor = function (id) {
           if ((this.selection.y + this.selection.h) > this.height - 5) {
             this.selection.h = this.height - this.selection.y;
           }
-          //document.getElementById('output_gesutre_angle').innerHTML = (gesture.a-this.gesture.startAngle);       
           r = r + (gesture.a - this.gesture.prevAngle);
-          this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-            'scale(' + 1 + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + r + 'deg)';
-          this.selection.seldom.style.width = this.selection.w + 'px';
-          this.selection.seldom.style.height = this.selection.h + 'px';
           this.selection.r = r;
-          this.selection.realtimeUpdatePos();
+          this.selection.setPosition();
           this.gesture.prevDistance = this.gesture.distance;
           this.gesture.prevAngle = gesture.a;
         }
@@ -654,16 +662,6 @@ var layouteditor = function (id) {
           return;
         }
 
-        /*
-        debug.log("this.preMouse.x=" + this.preMouse.x);
-        debug.log("this.preMouse.y=" + this.preMouse.y);
-        debug.log("mouse.x=" + mouse.x);
-        debug.log("mouse.y=" + mouse.y);
-        debug.log("this.preSel.x=" + this.preSel.x);
-        debug.log("this.preSel.y=" + this.preSel.y);
-        debug.log("mouse.x - this.dragoffx=" + (mouse.x - this.dragoffx));
-        debug.log("mouse.y - this.dragoffy=" + (mouse.y - this.dragoffy));
-        */
         if (e.type[0] == 't' && !this.dragging) {
           if (Math.abs(mouse.x - this.preMouse.x) < this.DEF_TouchPadding && Math.abs(mouse.y - this.preMouse.y) < this.DEF_TouchPadding) {
             console.warn("Skip this touch move");
@@ -687,6 +685,13 @@ var layouteditor = function (id) {
         scale = (parseFloat(target.getAttribute('data-scale')) || 1),
         w = (parseFloat(target.style.width) || 0),
         h = (parseFloat(target.style.height) || 0);
+
+        var oldx = this.selection.x;
+        var oldy = this.selection.y;
+        var oldx_w = this.selection.x + this.selection.w;
+        var oldy_h = this.selection.y + this.selection.h;
+        var oldw = this.selection.w;
+        var oldh = this.selection.h;
     }
 
     if (this.dragstart) {
@@ -698,31 +703,39 @@ var layouteditor = function (id) {
       this.selection.x = mouse.x - this.dragoffx;
       this.selection.y = mouse.y - this.dragoffy;
 
-      // limited in region
-      // debug.log('x='+ parseInt(this.selection.x));
-      // debug.log('y='+ parseInt(this.selection.y));
-      if (this.selection.x < 0) {
-        this.selection.x = 0;
-      }
-      if (this.selection.x < 0 || this.selection.y < 0) {
-        this.selection.y = 0;
-      }
-      // debug.log('width='+ parseInt(this.selection.w));
-      // debug.log('height='+ parseInt(this.selection.h));
-      if ((this.selection.x + this.selection.w) > this.width) {
-        this.selection.x = this.width - this.selection.w;
-      }
-      if ((this.selection.y + this.selection.h) > this.height) {
-        this.selection.y = this.height - this.selection.h;
-      }
 
-      this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + this.selection.r + 'deg)';
+      //limited by mouse
+      /*
+      if(mouse.x < 0 ){
+        this.selection.x = oldx;
+      }
+      if(mouse.y < 0){
+        this.selection.y = oldy;
+      }
+      if(mouse.x > this.width){
+        this.selection.x = oldx;
+      }
+      if(mouse.y > this.height){
+        this.selection.y = oldy;
+      }
+      */
+      // limited in region 
+      if(this.selection.r === 0){
+        if (this.selection.x < 0) {
+          this.selection.x = 0;
+        }
+        if (this.selection.x < 0 || this.selection.y < 0) {
+          this.selection.y = 0;
+        }
 
-      // update the posiion attributes
-      // target.setAttribute('data-x', x);
-      // target.setAttribute('data-y', y);
-      this.selection.realtimeUpdatePos();
+        if ((this.selection.x + this.selection.w) > this.width) {
+          this.selection.x = this.width - this.selection.w;
+        }
+        if ((this.selection.y + this.selection.h) > this.height) {
+          this.selection.y = this.height - this.selection.h;
+        }
+      }
+      this.selection.setPosition();
       debug.log("noMove end")
     } else if (this.resizestart) {
 
@@ -732,12 +745,7 @@ var layouteditor = function (id) {
         s.dragstart = false;
         s.dragging = false;
         s.resizeing = true;
-        var oldx = this.selection.x;
-        var oldy = this.selection.y;
-        var oldx_w = this.selection.x + this.selection.w;
-        var oldy_h = this.selection.y + this.selection.h;
-        var oldw = this.selection.w;
-        var oldh = this.selection.h;
+
         // 0  1  2   // tl   top  tr
         // 3     4   // left  c   right
         // 5  6  7   // bl  bottom  br
@@ -831,11 +839,6 @@ var layouteditor = function (id) {
         s.resizeing = true;
         s.rotatestart = false;
         s.rotating = false;
-
-        var oldx = this.selection.x;
-        var oldy = this.selection.y;
-        var oldw = this.selection.w;
-        var oldh = this.selection.h;
 
         var change = { x: 0, y: 0 };
         var xMin = this.selection.x;
@@ -959,16 +962,7 @@ var layouteditor = function (id) {
         this.selection.x = new_x;
         this.selection.y = new_y;
       }
-
-
-      this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + this.selection.r + 'deg)';
-      this.selection.seldom.style.width = (scale * this.selection.w) + 'px';
-      this.selection.seldom.style.height = (scale * this.selection.h) + 'px';
-      // update the posiion attributes
-      //target.setAttribute('data-x', x);
-      //target.setAttribute('data-y', y);
-      this.selection.realtimeUpdatePos();
+      this.selection.setPosition();
     } else if (this.rotatestart) {
       s.dragstart = false;
       s.dragging = false;
@@ -983,10 +977,8 @@ var layouteditor = function (id) {
       var diffy = mouse.y - old_cy;
       var deg = 90 + getDegree(Math.atan2(diffy, diffx));
       this.selection.r = deg;
-      this.selection.seldom.style.webkitTransform = this.selection.seldom.style.transform =
-        'scale(' + scale + ') translate(' + this.selection.x + 'px, ' + this.selection.y + 'px) rotate(' + deg + 'deg)';
-      this.selection.realtimeUpdatePos();
-      updateGripCursors(this.selection.selDomId,this.selection.r);
+      this.selection.setPosition();
+      this.selection.updateGripCursors();
     }
   }
 
@@ -1124,6 +1116,36 @@ var layouteditor = function (id) {
     dom.style.height = this.h + 'px';
     dom.style.webkitTransform = dom.style.transform =
       'scale(' + this.scale + ') translate(' + this.x + 'px,' + this.y + 'px) rotate(' + this.r + 'deg)';
+  };
+  Shape.prototype.updateGripCursors = function() {
+    var id = this.selDomId;
+    var angle = this.r;
+    var selectorGrips = {
+        'nw' : 'tl', //-45 //315
+        'n' : 'top', //0
+        'ne': 'tr',  //45
+        'e': 'right', //90
+        'se': 'br',  //135
+        's' : 'bottom', //180
+        'sw' : 'bl',  //225
+        'w' : 'left'  //270        
+    }
+    var dir_arr = [];
+    var steps = Math.round(angle / 45);
+    if(steps < 0) steps += 8;
+    for (var dir in selectorGrips) {
+      dir_arr.push(dir);
+    }
+    while(steps > 0) {
+      dir_arr.push(dir_arr.shift());
+      steps--;
+    }
+    var i = 0;
+    for (var dir in selectorGrips) {
+      console.log("resizeHandlers["+dir+"]="+selectorGrips[dir])
+      document.querySelector("#" + id + " .resize-handle[resizehandler='"+selectorGrips[dir]+"']").setAttribute('style', ('cursor:' + dir_arr[i] + '-resize'));
+      i++;
+    };
   };
   Shape.prototype.drawImage = function () {
     var dom_data = this.canvasdom.querySelector(".elm_data");
@@ -1309,34 +1331,6 @@ var layouteditor = function (id) {
     }
     return mySel;
   }
-  function updateGripCursors(id,angle) {
-    var selectorGrips = {
-        'nw' : 'tl', //-45 //315
-        'n' : 'top', //0
-        'ne': 'tr',  //45
-        'e': 'right', //90
-        'se': 'br',  //135
-        's' : 'bottom', //180
-        'sw' : 'bl',  //225
-        'w' : 'left'  //270        
-    }
-    var dir_arr = [];
-    var steps = Math.round(angle / 45);
-    if(steps < 0) steps += 8;
-    for (var dir in selectorGrips) {
-      dir_arr.push(dir);
-    }
-    while(steps > 0) {
-      dir_arr.push(dir_arr.shift());
-      steps--;
-    }
-    var i = 0;
-    for (var dir in selectorGrips) {
-      console.log("resizeHandlers["+dir+"]="+selectorGrips[dir])
-      document.querySelector("#" + id + " .resize-handle[resizehandler='"+selectorGrips[dir]+"']").setAttribute('style', ('cursor:' + dir_arr[i] + '-resize'));
-      i++;
-    };
-  };
   // 0  1  2   // tl   top  tr      // nw   n   ne
   // 3     4   // left  c   right   // s        e
   // 5  6  7   // bl  bottom  br    // sw   s   se
@@ -1370,7 +1364,7 @@ var layouteditor = function (id) {
         <div id="rotatebig-' + mySel.id + '-0" class="rotatebig-handle"></div>\
         <div id="rotate-' + mySel.id + '-0" class="rotate-handle"></div>';
       appendHtml(elm_rotate_handlers, html_rotate_handlers);
-      updateGripCursors(mySel.selDomId,mySel.r);
+      mySel.updateGripCursors();
     }
 
   };
