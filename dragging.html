@@ -32,10 +32,11 @@ body{
 </head>
 <body>
 <a href="#" class="addbutton" onclick="editor.add('image')">Add</a> <a href="#" class="refreshbutton" onclick="location.reload()">Refresh</a>
-<a href="#" class="bringtofront" onclick="editor.bringToFront()">BringToFront</a> <a href="#" class="sendtoback" onclick="editor.sendToBack()">SendToBack</a> 
+<a href="#" class="bringtofront" onclick="editor.moveForward()">Move Forward</a> <a href="#" class="sendtoback" onclick="editor.moveBackward()">Move Backward</a> 
 <div id="editwrapper">
 		<div class="canvas_main"></div>
-		<div class="drag_main"></div>
+    <div class="drag_main"></div>
+    <div class="project_dot"></div>
 </div>
 
   <!--
