@@ -217,7 +217,7 @@ var layouteditor = function (id) {
       prevAngle: 0       // angle of the previous gesture event
     };
 
-    this.lastminsize = {did:false,d:null/*direction*/};
+    this.lastminsize = { did: false, d: null/*direction*/ };
     /*
     this.clicked = null;
     this.e = null;
@@ -248,16 +248,16 @@ var layouteditor = function (id) {
     } else {
       debug.log(e.type + " event");
     }
-    if(point.x < 0 ){
+    if (point.x < 0) {
       point.x = 0;
     }
-    if(point.y < 0){
+    if (point.y < 0) {
       point.y = 0
     }
-    if(point.x > this.width){
+    if (point.x > this.width) {
       point.x = this.width;
     }
-    if(point.y > this.height){
+    if (point.y > this.height) {
       point.y = this.height;
     }
     return point;
@@ -315,22 +315,6 @@ var layouteditor = function (id) {
     }
 
     return touches;
-  }
-  function touchAnglex(event) {
-    //deltaSource = deltaSource || defaultOptions.deltaSource;
-    var showevent = {};
-    extend(showevent, event);
-    //console.log(showevent)
-    var deltaSource = 'page'
-    var sourceX = deltaSource + 'X',
-      sourceY = deltaSource + 'Y',
-      touches = getTouchPair(event);
-
-
-    var dx = touches[0][sourceX] - touches[1][sourceX],
-      dy = touches[0][sourceY] - touches[1][sourceY];
-
-    return getDegree(Math.atan2(dy, dx));
   }
   function touchAngle(event, prevAngle) {
     //deltaSource = deltaSource || defaultOptions.deltaSource;
@@ -656,7 +640,7 @@ var layouteditor = function (id) {
           console.warn("Selection is diffenet from now - this.dragstart=false");
           console.log("this.selection.selDomId=" + this.selection.selDomId);
           console.log(" e.target.getAttribute('id')=" + e.target.getAttribute('id'));
-          if(this.dragging !== true)
+          if (this.dragging !== true)
             this.dragstart = false;
           return;
         }
@@ -685,12 +669,12 @@ var layouteditor = function (id) {
         w = (parseFloat(target.style.width) || 0),
         h = (parseFloat(target.style.height) || 0);
 
-        var oldx = this.selection.x;
-        var oldy = this.selection.y;
-        var oldx_w = this.selection.x + this.selection.w;
-        var oldy_h = this.selection.y + this.selection.h;
-        var oldw = this.selection.w;
-        var oldh = this.selection.h;
+      var oldx = this.selection.x;
+      var oldy = this.selection.y;
+      var oldx_w = this.selection.x + this.selection.w;
+      var oldy_h = this.selection.y + this.selection.h;
+      var oldw = this.selection.w;
+      var oldh = this.selection.h;
     }
 
     if (this.dragstart) {
@@ -719,7 +703,7 @@ var layouteditor = function (id) {
       }
       */
       // limited in region 
-      if(this.selection.r === 0){
+      if (this.selection.r === 0) {
         if (this.selection.x < 0) {
           this.selection.x = 0;
         }
@@ -905,50 +889,50 @@ var layouteditor = function (id) {
         var new_x = new_tl.x;
         var new_y = new_tl.y;
 
-       
+
         // ** check minsize direction **/
         var minsize = 1;
         var min_d = "";
-        if(new_w <= minsize){
+        if (new_w <= minsize) {
           min_d += "w";
         }
-        if(new_h <= minsize){
+        if (new_h <= minsize) {
           min_d += "h";
         }
-        
-        if(this.lastminsize.did === true){
-          if(this.lastminsize.d !== min_d ){
+
+        if (this.lastminsize.did === true) {
+          if (this.lastminsize.d !== min_d) {
             this.lastminsize.did = false;
             console.log("lastminsize reset!");
           }
         }
-        if(min_d!=="") 
-            this.lastminsize.d = min_d;   
+        if (min_d !== "")
+          this.lastminsize.d = min_d;
         // ** end of check minsize direction **/
-        
+
         var minsize_ratio_x = change_ratio_x;
         var minsize_ratio_y = change_ratio_y;
 
-        if (new_w <= minsize || new_h <=  minsize) {
+        if (new_w <= minsize || new_h <= minsize) {
           if (new_w <= minsize) {
-            if(this.lastminsize.did === false){
+            if (this.lastminsize.did === false) {
               console.log("lastminsize w")
-              minsize_ratio_x = minsize/oldw;
-            }else{
+              minsize_ratio_x = minsize / oldw;
+            } else {
               minsize_ratio_x = 1;
             }
           }
           if (new_h <= minsize) {
-            if(this.lastminsize.did === false){
+            if (this.lastminsize.did === false) {
               console.log("lastminsize h")
-              minsize_ratio_y = minsize/oldh;
-            }else{
+              minsize_ratio_y = minsize / oldh;
+            } else {
               minsize_ratio_y = 1;
             }
           }
           this.lastminsize.did = true;
         }
-        if(min_d!==""){
+        if (min_d !== "") {
           new_center = doScale(minsize_ratio_x, minsize_ratio_y, r, p_tl, p_br, oldw, oldh, _center, origin);
           new_tl = calcRotate(360 - r, new_center.tl, new_center);//for new center
           new_w = new_center.width;
@@ -974,7 +958,7 @@ var layouteditor = function (id) {
       var old_cy = this.selection.y + this.selection.h * 0.5;
       var diffx = mouse.x - old_cx;
       var diffy = mouse.y - old_cy;
-      var deg = 90 + getDegree(Math.atan2(diffy, diffx));
+      var deg = 90 + calcRadiansToDegree(Math.atan2(diffy, diffx));
       this.selection.r = deg;
       this.selection.setPosition();
       this.selection.updateGripCursors();
@@ -1041,29 +1025,26 @@ var layouteditor = function (id) {
     e.stopPropagation();
     e.stopImmediatePropagation();
   }
-  CanvasState.prototype.GetZindexArray = function() {
-      var shapesZidx = new Array();
-      for(var i=0;i<shapes.length;i++)
-      {
-        shapesZidx[i] = shapes[i].zIndex;
-      }
-      return shapesZidx;
+  CanvasState.prototype.GetZindexArray = function () {
+    var shapesZidx = new Array();
+    for (var i = 0; i < shapes.length; i++) {
+      shapesZidx[i] = shapes[i].zIndex;
+    }
+    return shapesZidx;
   };
   CanvasState.prototype.bringToFront = function () {
     var shapeId = this.selection.id;
-    var modifyShape = objectFindByKey(shapes,'id',shapeId);
+    var modifyShape = objectFindByKey(shapes, 'id', shapeId);
     var modifyShapeZidx = modifyShape.zIndex;
     var switchShapeZidx = modifyShapeZidx;
     //var switchShapeId = shapeId;
     //collect all overlap shapes with this shape
     var overlapShapes = new Array();
-    var x=0;
-    for(var i=0;i<shapes.length;i++)
-    {
+    var x = 0;
+    for (var i = 0; i < shapes.length; i++) {
       var os = shapes[i];
       var find = false;
-      if(modifyShape.overlap(os))
-      {
+      if (modifyShape.overlap(os)) {
         overlapShapes[x] = shapes[i].zIndex;
         x++;
       }
@@ -1079,11 +1060,9 @@ var layouteditor = function (id) {
     }
     */
     var shapesZidx = overlapShapes;
-    shapesZidx.sort(function(a, b){return a-b});
-    for(var i=0;i<shapesZidx.length;i++)
-    {
-      if(modifyShapeZidx<shapesZidx[i])
-      {
+    shapesZidx.sort(function (a, b) { return a - b });
+    for (var i = 0; i < shapesZidx.length; i++) {
+      if (modifyShapeZidx < shapesZidx[i]) {
         switchShapeZidx = shapesZidx[i];
         break;
       }
@@ -1095,52 +1074,46 @@ var layouteditor = function (id) {
     console.log(ZindexArray);
     var to = ZindexArray.indexOf(switchShapeZidx);
     var from = ZindexArray.indexOf(modifyShapeZidx);
-    console.log('from='+modifyShapeZidx+' to='+switchShapeZidx)
-    if(from!=-1 && to!=-1 && modifyShapeZidx < switchShapeZidx)
-    {
+    console.log('from=' + modifyShapeZidx + ' to=' + switchShapeZidx)
+    if (from != -1 && to != -1 && modifyShapeZidx < switchShapeZidx) {
       ZindexArray[from] = switchShapeZidx;
-      for(var i=0;i<ZindexArray.length;i++)
-      {
-        if(ZindexArray[i]>=modifyShapeZidx && ZindexArray[i]<=switchShapeZidx && i!=from)
-        {
+      for (var i = 0; i < ZindexArray.length; i++) {
+        if (ZindexArray[i] >= modifyShapeZidx && ZindexArray[i] <= switchShapeZidx && i != from) {
           ZindexArray[i]--;
         }
       }
       console.log(ZindexArray);
 
-      for(var n=0;n<shapes.length;n++)
-      {
+      for (var n = 0; n < shapes.length; n++) {
         var shape = shapes[n];
         shape.zIndex = ZindexArray[n];
-        shape.canvasdom.setAttribute('zidx',shape.zIndex);
-        shape.seldom.setAttribute('zidx',shape.zIndex);
+        shape.canvasdom.setAttribute('zidx', shape.zIndex);
+        shape.seldom.setAttribute('zidx', shape.zIndex);
       }
-    }else{
+    } else {
       console.warn("no zIndex need change!");
     }
     dom_canvasMain.sortDom(".shape", function (a, b) {
-        if (parseInt(a.getAttribute('zidx')) > parseInt(b.getAttribute('zidx'))) {
-          return 1;
-        } else {
-          return -1;
-        }
-      });
+      if (parseInt(a.getAttribute('zidx')) > parseInt(b.getAttribute('zidx'))) {
+        return 1;
+      } else {
+        return -1;
+      }
+    });
   }
   CanvasState.prototype.sendToBack = function () {
     var shapeId = this.selection.id;
-    var modifyShape = objectFindByKey(shapes,'id',shapeId);
+    var modifyShape = objectFindByKey(shapes, 'id', shapeId);
     var modifyShapeZidx = modifyShape.zIndex;
     var switchShapeZidx = modifyShapeZidx;
     //var switchShapeId = shapeId;
     //collect all overlap shapes with this shape
     var overlapShapes = new Array();
-    var x=0;
-    for(var i=0;i<shapes.length;i++)
-    {
+    var x = 0;
+    for (var i = 0; i < shapes.length; i++) {
       var os = shapes[i];
       var find = false;
-      if(modifyShape.overlap(os))
-      {
+      if (modifyShape.overlap(os)) {
         overlapShapes[x] = shapes[i].zIndex;
         x++;
       }
@@ -1157,11 +1130,9 @@ var layouteditor = function (id) {
     }
     */
     var shapesZidx = overlapShapes;
-    shapesZidx.sort(function(a, b){return b-a});
-    for(var i=0;i<shapesZidx.length;i++)
-    {
-      if(modifyShapeZidx>shapesZidx[i])
-      {
+    shapesZidx.sort(function (a, b) { return b - a });
+    for (var i = 0; i < shapesZidx.length; i++) {
+      if (modifyShapeZidx > shapesZidx[i]) {
         switchShapeZidx = shapesZidx[i];
         break;
       }
@@ -1174,36 +1145,32 @@ var layouteditor = function (id) {
 
     var to = ZindexArray.indexOf(switchShapeZidx);
     var from = ZindexArray.indexOf(modifyShapeZidx);
-    console.log('from='+modifyShapeZidx+' to='+switchShapeZidx)
-    if(from!=-1 && to!=-1 && modifyShapeZidx > switchShapeZidx)
-    {
+    console.log('from=' + modifyShapeZidx + ' to=' + switchShapeZidx)
+    if (from != -1 && to != -1 && modifyShapeZidx > switchShapeZidx) {
       ZindexArray[from] = switchShapeZidx;
-      for(var i=0;i<ZindexArray.length;i++)
-      {
-        if(ZindexArray[i]>=switchShapeZidx && ZindexArray[i]<=modifyShapeZidx && i!=from)
-        {
+      for (var i = 0; i < ZindexArray.length; i++) {
+        if (ZindexArray[i] >= switchShapeZidx && ZindexArray[i] <= modifyShapeZidx && i != from) {
           ZindexArray[i]++;
         }
       }
       console.log(ZindexArray);
 
-      for(var n=0;n<shapes.length;n++)
-      {
+      for (var n = 0; n < shapes.length; n++) {
         var shape = shapes[n];//objectFindByKey(shapes,'zIndex',ZindexArray[n]);
         //console.log(shape.zIndex+"-->"+(n+1));
         shape.zIndex = ZindexArray[n];
-        shape.canvasdom.setAttribute('zidx',shape.zIndex);
-        shape.seldom.setAttribute('zidx',shape.zIndex);
+        shape.canvasdom.setAttribute('zidx', shape.zIndex);
+        shape.seldom.setAttribute('zidx', shape.zIndex);
       }
     }
 
     dom_canvasMain.sortDom(".shape", function (a, b) {
-        if (parseInt(a.getAttribute('zidx')) > parseInt(b.getAttribute('zidx'))) {
-          return 1;
-        } else {
-          return -1;
-        }
-      });
+      if (parseInt(a.getAttribute('zidx')) > parseInt(b.getAttribute('zidx'))) {
+        return 1;
+      } else {
+        return -1;
+      }
+    });
   }
 
   function Shape(id, type, x, y, w, h, fill, zindex) {
@@ -1261,7 +1228,7 @@ var layouteditor = function (id) {
     this.updateSelectionPos();
     this.realtimeUpdatePos();
   };
-  Shape.prototype.updateSelectionPos = function (){
+  Shape.prototype.updateSelectionPos = function () {
     var seldom = this.seldom;
     seldom.style.width = this.w + 'px';
     seldom.style.height = this.h + 'px';
@@ -1280,33 +1247,33 @@ var layouteditor = function (id) {
     dom.style.webkitTransform = dom.style.transform =
       'scale(' + this.scale + ') translate(' + this.x + 'px,' + this.y + 'px) rotate(' + this.r + 'deg)';
   };
-  Shape.prototype.updateGripCursors = function() {
+  Shape.prototype.updateGripCursors = function () {
     var id = this.selDomId;
     var angle = this.r;
     var selectorGrips = {
-        'nw' : 'tl', //-45 //315
-        'n' : 'top', //0
-        'ne': 'tr',  //45
-        'e': 'right', //90
-        'se': 'br',  //135
-        's' : 'bottom', //180
-        'sw' : 'bl',  //225
-        'w' : 'left'  //270        
+      'nw': 'tl', //-45 //315
+      'n': 'top', //0
+      'ne': 'tr',  //45
+      'e': 'right', //90
+      'se': 'br',  //135
+      's': 'bottom', //180
+      'sw': 'bl',  //225
+      'w': 'left'  //270        
     }
     var dir_arr = [];
     var steps = Math.round(angle / 45);
-    if(steps < 0) steps += 8;
+    if (steps < 0) steps += 8;
     for (var dir in selectorGrips) {
       dir_arr.push(dir);
     }
-    while(steps > 0) {
+    while (steps > 0) {
       dir_arr.push(dir_arr.shift());
       steps--;
     }
     var i = 0;
     for (var dir in selectorGrips) {
-      console.log("resizeHandlers["+dir+"]="+selectorGrips[dir])
-      document.querySelector("#" + id + " .resize-handle[resizehandler='"+selectorGrips[dir]+"']").setAttribute('style', ('cursor:' + dir_arr[i] + '-resize'));
+      console.log("resizeHandlers[" + dir + "]=" + selectorGrips[dir])
+      document.querySelector("#" + id + " .resize-handle[resizehandler='" + selectorGrips[dir] + "']").setAttribute('style', ('cursor:' + dir_arr[i] + '-resize'));
       i++;
     };
   };
@@ -1379,8 +1346,8 @@ var layouteditor = function (id) {
     });
 
   };
-  Shape.prototype.overlap = function(compareShape) {
-    return checkOverlap(this, [compareShape] , null, 0);
+  Shape.prototype.overlap = function (compareShape) {
+    return checkOverlap(this, [compareShape], null, 0);
   }
   Shape.prototype.rotate = function (degree) {
     this.rt = degree;
@@ -1563,12 +1530,16 @@ var layouteditor = function (id) {
       mySel.rotate(deg);
     }
   };
-  build.bringToFront = function (){
+  build.bringToFront = function () {
+    var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
+    dom_projectdot.innerHTML = "";
     if (mySel !== null) {
       s.bringToFront();
     }
   };
-  build.sendToBack = function (){
+  build.sendToBack = function () {
+    var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
+    dom_projectdot.innerHTML = "";
     if (mySel !== null) {
       s.sendToBack();
     }
@@ -1582,7 +1553,6 @@ var layouteditor = function (id) {
         build.setDefaultData(shapeId);
         shapeId++;
     }
-
     return build;
   };
   build.addimage = function (x, y, data) {
@@ -1620,11 +1590,15 @@ var layouteditor = function (id) {
   }
 
   //for global function
-  function getRadian(degree) {
+  function calcDegreeToRadian(degree) {
     return degree * Math.PI / 180;
   }
-  function getDegree(radians) {
+  function calcRadiansToDegree(radians) {
     return radians * 180 / Math.PI;
+  }
+
+  function getDegree(radians) {
+    return calcDegreeToRadian(radians);
   }
 
   /* For resizeing while a shape with non-zero angle */
@@ -1702,9 +1676,8 @@ var layouteditor = function (id) {
   };
 
   /* For checking overlapping */
-  function calcRotateCenter(w, h, degree) {
+  function calcRotateCenter(w, h, degree) { //for svg
     var center = {};
-
     center.x = ((w * Math.cos(getDegree(degree))) - ((h * Math.sin(getDegree(degree))))) / 2;
     center.y = ((h * Math.cos(getDegree(degree))) + ((w * Math.sin(getDegree(degree))))) / 2;
     //console.log("calcRotateCenter x="+center.x+";y="+center.y+";deg="+degree);
@@ -1714,15 +1687,16 @@ var layouteditor = function (id) {
   function findCoordAfterRotate(x, y, w, h, oriX, oriY, originDegree, targetDegree) {
     var pos = [];
     if (originDegree == 0 && targetDegree == 0) {
-        pos[0] = x;
-        pos[1] = y;
-        return pos;
+      pos[0] = x;
+      pos[1] = y;
+      return pos;
     }
-    var center = calcRotateCenter(w, h, originDegree);
+    //var center = calcRotateCenter(w, h, originDegree);
+    var center = {x:w/2,y:h/2};// replace with more faster calcuation of 
     var Ax = parseFloat(x),
-        Ay = parseFloat(y),
-        Bx = parseFloat(oriX) + parseFloat(center.x),
-        By = parseFloat(oriY) + parseFloat(center.y);
+      Ay = parseFloat(y),
+      Bx = parseFloat(oriX) + parseFloat(center.x),
+      By = parseFloat(oriY) + parseFloat(center.y);
     pos[0] = parseFloat(Bx) + parseFloat(((Ax - Bx) * Math.cos(getDegree(targetDegree - originDegree))) - (((Ay - By) * Math.sin(getDegree(targetDegree - originDegree)))));
     pos[1] = parseFloat(By) + parseFloat(((Ay - By) * Math.cos(getDegree(targetDegree - originDegree))) + (((Ax - Bx) * Math.sin(getDegree(targetDegree - originDegree)))));
     //console.log("calcPositionAtDeg0 x="+posAt0.x+";y="+posAt0.y+";origin="+origin+";target="+target);
@@ -1731,200 +1705,200 @@ var layouteditor = function (id) {
 
   function findCoordAfterRotateXX(x, y, w, h, oriX, oriY, originDegree, targetDegree) {
     var pos = [];
-    var point = {x:x,y:y,w:w,h:h}; 
-    var center = {x:x+w/2,y:y+h/2};
-    var obj = calcRotate(targetDegree,point,center);
+    var point = { x: x, y: y, w: w, h: h };
+    var center = { x: oriX + w / 2, y: oriY + h / 2 };
+    var obj = calcRotate(targetDegree, point, center);
     pos[0] = obj.x;
     pos[1] = obj.y;
     return pos;
   };
 
   function findPointInPolygon(point, vs) {
-      var xi, xj, yi, yj, intersect,
-          x = point[0],
-          y = point[1],
-          inside = false;
-      for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-          xi = vs[i][0];
-          yi = vs[i][1];
-          xj = vs[j][0];
-          yj = vs[j][1];
-          intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-          if (intersect) inside = !inside;
-      }
-      return inside;
+    var xi, xj, yi, yj, intersect,
+      x = point[0],
+      y = point[1],
+      inside = false;
+    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+      xi = vs[i][0];
+      yi = vs[i][1];
+      xj = vs[j][0];
+      yj = vs[j][1];
+      intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
   }
 
   function getCorners(x, y, w, h, degree) {
-      var arr = [];
-      //var oriAt0 = {};
-      //oriAt0 = findCoordAfterRotate(x, y, w, h, x, y, degree, 0);
-      //x = oriAt0[0];
-      //y = oriAt0[1];
-      arr.push(findCoordAfterRotate(x, y, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w, y, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w, y + h, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x, y + h, w, h, x, y, 0, degree));
+    var arr = [];
+    //var oriAt0 = {};
+    //oriAt0 = findCoordAfterRotate(x, y, w, h, x, y, degree, 0);
+    //x = oriAt0[0];
+    //y = oriAt0[1];
+    arr.push(findCoordAfterRotate(x, y, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w, y, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w, y + h, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x, y + h, w, h, x, y, 0, degree));
 
-      return arr;
+    return arr;
   }
 
   function getSamplePoints(x, y, w, h, degree) {
-      var arr = [];
-      //var oriAt0 = {};
-      //oriAt0 = findCoordAfterRotate(x, y, w, h, x, y, degree, 0);
-      //x = oriAt0[0];
-      //y = oriAt0[1];
-      arr.push(findCoordAfterRotate(x, y, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w, y, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w, y + h, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x, y + h, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w / 2, y, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w, y + h / 2, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w / 2, y + h, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x, y + h / 2, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w * 0.5, y + h * 0.25, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w * 0.75, y + h * 0.5, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w * 0.5, y + h * 0.75, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w * 0.25, y + h * 0.5, w, h, x, y, 0, degree));
-      arr.push(findCoordAfterRotate(x + w / 2, y + h / 2, w, h, x, y, 0, degree));
-      return arr;
+    var arr = [];
+    //var oriAt0 = {};
+    //oriAt0 = findCoordAfterRotate(x, y, w, h, x, y, degree, 0);
+    //x = oriAt0[0];
+    //y = oriAt0[1];
+    arr.push(findCoordAfterRotate(x, y, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w, y, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w, y + h, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x, y + h, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w / 2, y, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w, y + h / 2, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w / 2, y + h, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x, y + h / 2, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w * 0.5, y + h * 0.25, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w * 0.75, y + h * 0.5, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w * 0.5, y + h * 0.75, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w * 0.25, y + h * 0.5, w, h, x, y, 0, degree));
+    arr.push(findCoordAfterRotate(x + w / 2, y + h / 2, w, h, x, y, 0, degree));
+    return arr;
   }
 
   function checkOverlap(elmForCheck, elmsToCheck, callback, checkgap, elmsToExclude) {
-      var result = false;
-      var overlap = false;
-      var Aret = false;
-      var Bret = false;
-      var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
-      var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
-      for (var i in elmsToCheck) {
-          overlap = false;
-          var s = elmsToCheck[i];
-          var doCheck = true;
-          if (elmsToExclude !== undefined && elmsToExclude !== null && elmsToExclude.length > 0 && elmsToExclude.indexOf(s.id) !== -1) {
-              doCheck = false;
-          } else {
-              doCheck = true;
-          }
-          if (s.id === elmForCheck.id) {
-              doCheck = false;
-          }
-          if (doCheck === true) {
-              var Acoords = getCorners(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
-              var AcoordsR = getSamplePoints(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
-              var Bcoords = getCorners(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
-              var BcoordsR = getSamplePoints(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
-              //check a's round 16 points overlap with s's corner area
-              Aret = false;
-              Bret = false;
-              for (var j in aR) {
-                  if (findPointInPolygon(aR[j], Acoords)) {
-                      Aret = true;
-                  }
-              }
-              for (var k in aR) {
-                  if (findPointInPolygon(aR[k], Bcoords)) {
-                      Bret = true;
-                  }
-              }
-              if (Aret === true && Bret === true) {
-                  overlap = true;
-                  //console.log('overlapA!');
-              }
-              //check c's round 16 points overlap with a's corner area
-              Aret = false;
-              Bret = false;
-              for (var m in AcoordsR) {
-                  if (findPointInPolygon(AcoordsR[m], a)) {
-                      Aret = true;
-                  }
-              }
-              for (var n in BcoordsR) {
-                  if (findPointInPolygon(BcoordsR[n], a)) {
-                      Bret = true;
-                  }
-              }
-              if (Aret === true && Bret === true) {
-                  overlap = true;
-                  //console.log('overlapB!');
-              }
-              result = result || overlap;
-              if (callback !== null) {
-                  callback(s.id, overlap);
-              }
-          }
+    var result = false;
+    var overlap = false;
+    var Aret = false;
+    var Bret = false;
+    var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
+    var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
+    for (var i in elmsToCheck) {
+      overlap = false;
+      var s = elmsToCheck[i];
+      var doCheck = true;
+      if (elmsToExclude !== undefined && elmsToExclude !== null && elmsToExclude.length > 0 && elmsToExclude.indexOf(s.id) !== -1) {
+        doCheck = false;
+      } else {
+        doCheck = true;
       }
-      return result;
+      if (s.id === elmForCheck.id) {
+        doCheck = false;
+      }
+      if (doCheck === true) {
+        var Acoords = getCorners(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
+        var AcoordsR = getSamplePoints(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
+        var Bcoords = getCorners(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
+        var BcoordsR = getSamplePoints(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
+        //check a's round 16 points overlap with s's corner area
+        Aret = false;
+        Bret = false;
+        for (var j in aR) {
+          if (findPointInPolygon(aR[j], Acoords)) {
+            Aret = true;
+          }
+        }
+        for (var k in aR) {
+          if (findPointInPolygon(aR[k], Bcoords)) {
+            Bret = true;
+          }
+        }
+        if (Aret === true && Bret === true) {
+          overlap = true;
+          //console.log('overlapA!');
+        }
+        //check c's round 16 points overlap with a's corner area
+        Aret = false;
+        Bret = false;
+        for (var m in AcoordsR) {
+          if (findPointInPolygon(AcoordsR[m], a)) {
+            Aret = true;
+          }
+        }
+        for (var n in BcoordsR) {
+          if (findPointInPolygon(BcoordsR[n], a)) {
+            Bret = true;
+          }
+        }
+        if (Aret === true && Bret === true) {
+          overlap = true;
+          //console.log('overlapB!');
+        }
+        result = result || overlap;
+        if (callback !== null) {
+          callback(s.id, overlap);
+        }
+      }
+    }
+    return result;
   }
   function checkOverlapFast(elmForCheck, elmsToCheck, callback, checkgap, elmsToExclude) {
-      var result = false;
-      var overlap = false;
-      var Aret = false;
-      var Bret = false;
-      var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
-      var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
-      for (var i in elmsToCheck) {
-          overlap = false;
-          var s = elmsToCheck[i];
-          var doCheck = true;
-          if (elmsToExclude !== undefined && elmsToExclude !== null && elmsToExclude.length > 0 && elmsToExclude.indexOf(s.id) !== -1) {
-              doCheck = false;
-          } else {
-              doCheck = true;
-          }
-          if (s.id === elmForCheck.id) {
-              doCheck = false;
-          }
-          if (doCheck === true) {
-
-              var Acoords = getCorners(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
-              var AcoordsR = getSamplePoints(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
-              //var Bcoords = getCorners(s.x - checkgap, s.y- checkgap , s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
-              //var BcoordsR = getSamplePoints(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
-              //check a's round 16 points overlap with s's corner area
-              Aret = false;
-              Bret = false;
-              for (var j in aR) {
-                  if (findPointInPolygon(aR[j], Acoords)) {
-                      Aret = true;
-                  }
-              }
-              /*
-              for (var k in aR) {
-                  if (findPointInPolygon(aR[k], Bcoords)) {
-                      Bret = true;
-                  }
-              }*/
-              if (Aret === true) {
-                  overlap = true;
-              }
-              //check c's round 16 points overlap with a's corner area
-              Aret = false;
-              Bret = false;
-              for (var m in AcoordsR) {
-                  if (findPointInPolygon(AcoordsR[m], a)) {
-                      Aret = true;
-                  }
-              }
-              /*
-              for (var n in BcoordsR) {
-                  if (findPointInPolygon(BcoordsR[n], a)) {
-                      Bret = true;
-                  }
-              }
-              */
-              if (Aret === true) {
-                  overlap = true;
-              }
-              result = result || overlap;
-              if (callback !== null) {
-                  callback(s.id, overlap);
-              }
-
-          }
+    var result = false;
+    var overlap = false;
+    var Aret = false;
+    var Bret = false;
+    var a = getCorners(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
+    var aR = getSamplePoints(elmForCheck.x, elmForCheck.y, elmForCheck.w, elmForCheck.h, elmForCheck.r);
+    for (var i in elmsToCheck) {
+      overlap = false;
+      var s = elmsToCheck[i];
+      var doCheck = true;
+      if (elmsToExclude !== undefined && elmsToExclude !== null && elmsToExclude.length > 0 && elmsToExclude.indexOf(s.id) !== -1) {
+        doCheck = false;
+      } else {
+        doCheck = true;
       }
-      return result;
+      if (s.id === elmForCheck.id) {
+        doCheck = false;
+      }
+      if (doCheck === true) {
+
+        var Acoords = getCorners(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
+        var AcoordsR = getSamplePoints(s.x + checkgap, s.y + checkgap, s.w - 2 * checkgap, s.h - 2 * checkgap, s.r);
+        //var Bcoords = getCorners(s.x - checkgap, s.y- checkgap , s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
+        //var BcoordsR = getSamplePoints(s.x - checkgap, s.y - checkgap, s.w + 2 * checkgap, s.h + 2 * checkgap, s.r);
+        //check a's round 16 points overlap with s's corner area
+        Aret = false;
+        Bret = false;
+        for (var j in aR) {
+          if (findPointInPolygon(aR[j], Acoords)) {
+            Aret = true;
+          }
+        }
+        /*
+        for (var k in aR) {
+            if (findPointInPolygon(aR[k], Bcoords)) {
+                Bret = true;
+            }
+        }*/
+        if (Aret === true) {
+          overlap = true;
+        }
+        //check c's round 16 points overlap with a's corner area
+        Aret = false;
+        Bret = false;
+        for (var m in AcoordsR) {
+          if (findPointInPolygon(AcoordsR[m], a)) {
+            Aret = true;
+          }
+        }
+        /*
+        for (var n in BcoordsR) {
+            if (findPointInPolygon(BcoordsR[n], a)) {
+                Bret = true;
+            }
+        }
+        */
+        if (Aret === true) {
+          overlap = true;
+        }
+        result = result || overlap;
+        if (callback !== null) {
+          callback(s.id, overlap);
+        }
+
+      }
+    }
+    return result;
   }
 };
 
