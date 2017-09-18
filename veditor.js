@@ -1032,7 +1032,7 @@ var layouteditor = function (id) {
     }
     return shapesZidx;
   };
-  CanvasState.prototype.bringToFront = function () {
+  CanvasState.prototype.moveForward = function () {
     var shapeId = this.selection.id;
     var modifyShape = objectFindByKey(shapes, 'id', shapeId);
     var modifyShapeZidx = modifyShape.zIndex;
@@ -1101,7 +1101,7 @@ var layouteditor = function (id) {
       }
     });
   }
-  CanvasState.prototype.sendToBack = function () {
+  CanvasState.prototype.moveBackward = function () {
     var shapeId = this.selection.id;
     var modifyShape = objectFindByKey(shapes, 'id', shapeId);
     var modifyShapeZidx = modifyShape.zIndex;
@@ -1530,18 +1530,18 @@ var layouteditor = function (id) {
       mySel.rotate(deg);
     }
   };
-  build.bringToFront = function () {
+  build.moveForward = function () {
     var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
     dom_projectdot.innerHTML = "";
     if (mySel !== null) {
-      s.bringToFront();
+      s.moveForward();
     }
   };
-  build.sendToBack = function () {
+  build.moveBackward = function () {
     var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
     dom_projectdot.innerHTML = "";
     if (mySel !== null) {
-      s.sendToBack();
+      s.moveBackward();
     }
   };
   build.add = function (type, jsonObj) {
