@@ -10,6 +10,10 @@ var layouteditor = function (id) {
   handle.canvaswidth = 0;
   handle.canvasheight = 0;
   handle.interact = null;
+  handle.enableSnapToShapes = true;
+
+  var ALIGMENT_THRESHOLD = 5;
+  var dbgSnapping = true;
 
   var shapes = [];
   var shapeId = 1;
@@ -18,6 +22,7 @@ var layouteditor = function (id) {
   var dom_editorwrapper = document.getElementById(id);
   var dom_dragMain = dom_editorwrapper.querySelector('.drag_main');
   var dom_canvasMain = dom_editorwrapper.querySelector('.canvas_main');
+  var dom_guidelinesMain = dom_editorwrapper.querySelector('.guidelines_main');
   handle.shapes = shapes;
 
   var s = new CanvasState(dom_canvasMain, dom_dragMain);
@@ -718,6 +723,14 @@ var layouteditor = function (id) {
           this.selection.y = this.height - this.selection.h;
         }
       }
+      var snapTo = {};
+      if (handle.enableSnapToShapes === true) {
+        var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');       
+        dom_projectdot.innerHTML = "";
+        snapTo = this.selection.snapToShape(this.selection.x, this.selection.y);
+        this.selection.x = snapTo.x;
+        this.selection.y = snapTo.y;
+      }
       this.selection.setPosition();
       debug.log("noMove end")
     } else if (this.resizestart) {
@@ -944,6 +957,7 @@ var layouteditor = function (id) {
         this.selection.h = new_h;
         this.selection.x = new_x;
         this.selection.y = new_y;
+
       }
       this.selection.setPosition();
     } else if (this.rotatestart) {
@@ -1172,6 +1186,15 @@ var layouteditor = function (id) {
       }
     });
   }
+  CanvasState.prototype.showBoundingBox = function () {
+    var dom_boundingbox = dom_editorwrapper.querySelector('.bounding_box');
+    dom_boundingbox.innerHTML = "";
+    for (var i in shapes) {
+      var shape = shapes[i];
+      var p = shape.getBBox();
+      dom_boundingbox.innerHTML += "<div class='boudingbox' style='left:" + p.x + "px; top:" + p.y + "px; width:" + p.w + "px; height:" + p.h + "px '></div>"
+    }
+  }
 
   function Shape(id, type, x, y, w, h, fill, zindex) {
     this.id = id || (Math.floor(Math.random() * 1000000000));
@@ -1272,7 +1295,7 @@ var layouteditor = function (id) {
     }
     var i = 0;
     for (var dir in selectorGrips) {
-      console.log("resizeHandlers[" + dir + "]=" + selectorGrips[dir])
+      //console.log("resizeHandlers[" + dir + "]=" + selectorGrips[dir])
       document.querySelector("#" + id + " .resize-handle[resizehandler='" + selectorGrips[dir] + "']").setAttribute('style', ('cursor:' + dir_arr[i] + '-resize'));
       i++;
     };
@@ -1359,6 +1382,16 @@ var layouteditor = function (id) {
     this.r = r;
     this.draw();
   };
+  Shape.prototype.getBBox = function () { //BoudningBox
+    return calcBoundingBox(this.x, this.y, this.w, this.h, this.r);
+  };
+  Shape.prototype.snapToShape = function (x, y) {
+    var a = calcBoundingBox(x, y, this.w, this.h, this.r);
+    return snapToShape(x, y, a, [this.id]);
+  };
+
+
+
   var build = function () {
     build.bindListener();
     return this;
@@ -1515,6 +1548,7 @@ var layouteditor = function (id) {
         elm_rotate_handlers.innerHTML = "";
     }
     build.restoreSelectionOrder();
+    build.clearAlignmentGuides();
   };
   build.restoreSelectionOrder = function () {
     dom_dragMain.sortDom(".selshape", function (a, b) {
@@ -1531,18 +1565,94 @@ var layouteditor = function (id) {
     }
   };
   build.moveForward = function () {
-    var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
-    dom_projectdot.innerHTML = "";
     if (mySel !== null) {
       s.moveForward();
     }
   };
   build.moveBackward = function () {
-    var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
-    dom_projectdot.innerHTML = "";
     if (mySel !== null) {
       s.moveBackward();
     }
+  };
+  build.showBoundingBox = function () {
+    s.showBoundingBox();
+  };
+  function drawGraphLine(x1, y1, x2, y2, id) {
+
+    var lsize = 2;
+    //var dom_projectdot = dom_editorwrapper.querySelector('.project_dot');
+    //dom_projectdot.innerHTML += "<div class='projectdot' style='left:" + x1 + "px; top:" + y1 + "px'></div>"
+    //dom_projectdot.innerHTML += "<div class='projectdot' style='left:" + x2 + "px; top:" + y2 + "px'></div>"
+
+    var dist = Math.ceil(Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)));
+    var angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    var xshift = dist - Math.abs(x2 - x1);
+    var yshift = Math.abs(y1 - y2) / 2;
+
+    var div = document.createElement('div');
+    div.setAttribute("id", id);
+    //div.style.backgroundColor = '#999999';
+    div.style.position = 'absolute';
+    div.style.left = 0;//(x1 - xshift / 2) + 'px';
+    div.style.top = 0;//(Math.min(y1, y2) + yshift) + 'px';
+    div.style.width = dist + 'px';
+    div.style.height = '0px'; //lsize
+    div.style.border = 'none';
+    //div.style.border = '1px dashed #999999';
+    //div.style.outline ='none';
+    div.style.outline = '1px dashed #999999';
+    div.style.WebkitTransform = div.style.transform = 'scale(1) translate('+ (x1 - xshift / 2) + 'px,'+(Math.min(y1, y2) + yshift)+'px)rotate(' + angle + 'deg)';
+    //div.style.MozTransform = ' rotate(' + angle + 'deg)';
+    //'stroke-dasharray': lsize * 8 + ' ' + lsize * 8,
+    return div;
+  }
+  build.drawAlignmentGuide = function (x1, y1, w1, h1, x2, y2, w2, h2, lid, caseid) {
+    //console.log("x1="+x1+";y1="+y1+";x2="+x2+";y2="+y2);
+    var dx1 = x1,
+      dx2 = x2,
+      dy1 = y1,
+      dy2 = y2;
+    var extend = 20;
+    if (y1 == y2) {
+      if (x2 - x1 > 0) {
+        dx2 = x2 + extend + w2 + (x1 + w1 > x2 + w2 ? (w1 - w2 + x1 - x2) : 0);
+        dx1 = x1 - extend;
+      } else if (x2 - x1 < 0) {
+        dx1 = x2 - extend;
+        dx2 = x1 + extend + w1 + (x1 + w1 < x2 + w2 ? (w2 - w1 + x2 - x1) : 0);
+      } else {
+        return this;
+      }
+    } else if (x1 == x2) {
+      dx1 = x1;
+      dx2 = x2;
+      if (y2 - y1 > 0) {
+        dy2 = y2 + extend + h2 + (y1 + h1 > y2 + h2 ? (h1 - h2 + y1 - y2) : 0);
+        dy1 = y1 - extend;
+      } else if (y2 - y1 < 0) {
+        dy1 = y2 - extend;
+        dy2 = y1 + extend + h1 + (y1 + h1 < y2 + h2 ? (h2 - h1 + y2 - y1) : 0);
+      } else {
+        return this;
+      }
+    } else {
+
+    }
+    //console.log("dx1="+dx1+";dy1="+dy1+";dx2="+dx2+";dy2="+dy2);
+    var lsize = 2;//* handle.canvaswidth / 5000 / nowZoomScale;
+    dom_guidelinesMain.appendChild(drawGraphLine(dx1, dy1, dx2, dy2, lid + caseid));
+    var dom_alignmentguide = document.getElementById(lid + caseid);
+
+    if (dbgSnapping === true) {
+      if (caseid.indexOf('x') >= 0)
+        dom_alignmentguide.style.borderColor = '#00FF00';
+      else
+        dom_alignmentguide.style.borderColor = '#0000FF';
+    }
+    return this;
+  };
+  build.clearAlignmentGuides = function () {
+    dom_guidelinesMain.innerHTML = "";
   };
   build.add = function (type, jsonObj) {
     debug.log('Add a ' + type + ' element');
@@ -1692,7 +1802,7 @@ var layouteditor = function (id) {
       return pos;
     }
     //var center = calcRotateCenter(w, h, originDegree);
-    var center = {x:w/2,y:h/2};// replace with more faster calcuation of 
+    var center = { x: w / 2, y: h / 2 };// replace with more faster calcuation of 
     var Ax = parseFloat(x),
       Ay = parseFloat(y),
       Bx = parseFloat(oriX) + parseFloat(center.x),
@@ -1703,7 +1813,7 @@ var layouteditor = function (id) {
     return pos;
   }
 
-  function findCoordAfterRotateXX(x, y, w, h, oriX, oriY, originDegree, targetDegree) {
+  function findCoordAfterRotate_ForTesting(x, y, w, h, oriX, oriY, originDegree, targetDegree) {
     var pos = [];
     var point = { x: x, y: y, w: w, h: h };
     var center = { x: oriX + w / 2, y: oriY + h / 2 };
@@ -1900,6 +2010,316 @@ var layouteditor = function (id) {
     }
     return result;
   }
+
+  /* For snapping & guideline */
+  function getBoundingBox(points) {
+    var MinX = Infinity;
+    var MinY = Infinity;
+    var MaxX = 0;
+    var MaxY = 0;
+    for (var i in points) {
+      var p = points[i];
+      if (p[0] < MinX)
+        MinX = p[0];
+      if (p[1] < MinY)
+        MinY = p[1];
+      if (p[0] > MaxX)
+        MaxX = p[0];
+      if (p[1] > MaxY)
+        MaxY = p[1];
+    }
+    return { x: MinX, y: MinY, w: MaxX - MinX, h: MaxY - MinY };
+  }
+  function calcBoundingBox(x, y, w, h, degree) {
+    var arr = getCorners(x, y, w, h, degree);
+    return getBoundingBox(arr);
+  }
+
+  function snapToShape(x, y, boudingbox, elmsToExclude) {
+    var ALIGMENT_THRESHOLD_OVERLAP = ALIGMENT_THRESHOLD;
+    var snapTo = {};
+    var snapToB = {};
+    var a = boudingbox;
+    a.id = "line";
+    snapToB.x = a.x;
+    snapToB.y = a.y;
+
+    var snapingX = false;
+    var snapingY = false;
+    build.clearAlignmentGuides();
+    var listSnappingX = [];
+    var listSnappingY = [];
+    for (var i in shapes) {
+      var shape = shapes[i];
+      var checkgap = 0;
+      var caseid = '';
+      var s = calcBoundingBox(shape.x + checkgap, shape.y + checkgap, shape.w - 2 * checkgap, shape.h - 2 * checkgap, shape.r);
+      s.id = shape.id;
+      if (elmsToExclude.indexOf(s.id) === -1) {
+        var lid = 'alignmentguide_' + a.id + '_' + s.id + '_';
+        //---detect x opposite edges
+        //case1
+        if ((a.x - (s.x + s.w) > 0) && (a.x - (s.x + s.w) < ALIGMENT_THRESHOLD)) {
+          caseid = 'xo1';
+          snapToB.x = s.x + s.w;
+          build.drawAlignmentGuide(s.x + s.w, s.y, s.w, s.h, s.x + s.w, a.y, a.w, a.h, lid, caseid);
+          snapingX = true;
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //case2
+        if ((s.x - (a.x + a.w) > 0) && (s.x - (a.x + a.w) < ALIGMENT_THRESHOLD)) {
+          caseid = 'xo2';
+          snapToB.x = s.x - a.w;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, s.x, a.y, a.w, a.h, lid, caseid);
+          snapingX = true;
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //case1
+        if (((s.x + s.w) - a.x > 0) && ((s.x + s.w) - a.x < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'xo3';
+          snapToB.x = s.x + s.w;
+          build.drawAlignmentGuide(s.x + s.w, s.y, s.w, s.h, s.x + s.w, a.y, a.w, a.h, lid, caseid);
+          snapingX = true;
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //case2
+        if (((a.x + a.w) - s.x > 0) && ((a.x + a.w) - s.x < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'xo4';
+          snapToB.x = s.x - a.w;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, s.x, a.y, a.w, a.h, lid, caseid);
+          snapingX = true;
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //---detect y opposite edges
+        //case3
+        if ((a.y - (s.y + s.h) > 0) && (a.y - (s.y + s.h) < ALIGMENT_THRESHOLD)) {
+          caseid = 'yo1';
+          snapToB.y = s.y + s.h;
+          build.drawAlignmentGuide(s.x, s.y + s.h, s.w, s.h, a.x, s.y + s.h, a.w, a.h, lid, caseid);
+          snapingY = true;
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //case4
+        if ((s.y - (a.y + a.h) > 0) && (s.y - (a.y + a.h) < ALIGMENT_THRESHOLD)) {
+          caseid = 'yo2';
+          snapToB.y = s.y - a.h;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, a.x, s.y, a.w, a.h, lid, caseid);
+          snapingY = true;
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //case3
+        if (((s.y + s.h) - a.y > 0) && ((s.y + s.h) - a.y < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'yo3';
+          snapToB.y = s.y + s.h;
+          build.drawAlignmentGuide(s.x, s.y + s.h, s.w, s.h, a.x, s.y + s.h, a.w, a.h, lid, caseid);
+          snapingY = true;
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //case4
+        if (((a.y + a.h) - s.y > 0) && ((a.y + a.h) - s.y < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'yo4';
+          snapToB.y = s.y - a.h;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, a.x, s.y, a.w, a.h, lid, caseid);
+          snapingY = true;
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //---detect x same edges
+        //case2
+        if ((a.x - (s.x) > 0) && (a.x - (s.x) < ALIGMENT_THRESHOLD)) {
+          caseid = 'xs1';
+          snapToB.x = s.x;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, s.x, a.y, a.w, a.h, lid, caseid);
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //case2
+        if ((s.x - (a.x) > 0) && (s.x - (a.x) < ALIGMENT_THRESHOLD)) {
+          caseid = 'xs2';
+          snapToB.x = s.x;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, s.x, a.y, a.w, a.h, lid, caseid);
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //case1
+        if (((s.x + s.w) - (a.x + a.w) > 0) && ((s.x + s.w) - (a.x + a.w) < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'xs3';
+          snapToB.x = s.x + s.w - a.w;
+          build.drawAlignmentGuide(s.x + s.w, s.y, s.w, s.h, s.x + s.w, a.y, a.w, a.h, lid, caseid);
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //case1
+        if (((a.x + a.w) - (s.x + s.w) > 0) && ((a.x + a.w) - (s.x + s.w) < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'xs4';
+          snapToB.x = s.x + s.w - a.w;
+          build.drawAlignmentGuide(s.x + s.w, s.y, s.w, s.h, s.x + s.w, a.y, a.w, a.h, lid, caseid);
+          listSnappingX.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'x',
+            snapToB: snapToB.x
+          });
+        }
+        //---detect y same edges
+        //case4
+        if ((a.y - (s.y) > 0) && (a.y - (s.y) < ALIGMENT_THRESHOLD)) {
+          caseid = 'ys1';
+          snapToB.y = s.y;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, a.x, s.y, a.w, a.h, lid, caseid);
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //case4
+        if ((s.y - (a.y) > 0) && (s.y - (a.y) < ALIGMENT_THRESHOLD)) {
+          caseid = 'ys2';
+          snapToB.y = s.y;
+          build.drawAlignmentGuide(s.x, s.y, s.w, s.h, a.x, s.y, a.w, a.h, lid, caseid);
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //case3
+        if (((s.y + s.h) - (a.y + a.h) > 0) && ((s.y + s.h) - (a.y + a.h) < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'ys3';
+          snapToB.y = s.y + s.h - a.h;
+          build.drawAlignmentGuide(s.x, s.y + s.h, s.w, s.h, a.x, s.y + s.h, a.w, a.h, lid, caseid);
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+        //case3
+        if (((a.y + a.h) - (s.y + s.h) > 0) && ((a.y + a.h) - (s.y + s.h) < ALIGMENT_THRESHOLD_OVERLAP)) {
+          caseid = 'ys4';
+          snapToB.y = s.y + s.h - a.h;
+          build.drawAlignmentGuide(s.x, s.y + s.h, s.w, s.h, a.x, s.y + s.h, a.w, a.h, lid, caseid);
+          listSnappingY.push({
+            id: s.id,
+            lid: lid,
+            caseid: caseid,
+            axis: 'y',
+            snapToB: snapToB.y
+          });
+        }
+      }
+    }
+    if (dbgSnapping === true) {
+      //   build.showPointer(x, y);
+      //   build.showBeforeSnap(a.x, a.y, a.w, a.h);
+    }
+    var chooseNearestSnapping = function (now, thisBounding, listSnapping) {
+      if (dbgSnapping === true) {
+        console.log(listSnapping);
+      }
+      if (listSnapping.length > 0) {
+        var nearestSnapToB = 0;
+        var SnapOffsetMin = Infinity;
+        listSnapping.Last_SnapOffsetMin = Infinity;
+        for (var k in listSnapping) {
+          var snapnearest = listSnapping[k];
+          //snapnearest.now = now;
+          //snapnearest.offset = Math.abs(snapnearest.snapToB - now);
+          //if(parseFloat(listSnapping.Last_SnapOffsetMin) === parseFloat(Math.abs(snapnearest.snapToB-now))){
+          //  console.log("------------------------------> same");
+          //}
+          if (Math.abs(snapnearest.snapToB - now) < SnapOffsetMin) {
+            SnapOffsetMin = Math.abs(snapnearest.snapToB - now);
+            nearestSnapToB = snapnearest.snapToB;
+            listSnapping.Last_SnapOffsetMin = Math.abs(snapnearest.snapToB - now);
+          }
+        }
+        return nearestSnapToB;
+      } else {
+        return thisBounding;
+      }
+    };
+    snapTo.x = chooseNearestSnapping(x, a.x, listSnappingX) + (x - a.x);
+    snapTo.y = chooseNearestSnapping(y, a.y, listSnappingY) + (y - a.y);
+    //snapTo.x = snapToB.x;// + (x - a.x);
+    //snapTo.y = snapToB.y;// + (y - a.y);
+    snapTo.snapingX = snapingX;
+    snapTo.snapingY = snapingY;
+    return snapTo;
+  }
+
+
+
 };
 
 function createEditor() {

@@ -224,3 +224,23 @@
   top: -40px;
   left: calc(50% - 15px);
 }
+.projectdot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background-color: rgba(255,0,0,0.5);
+}
+.projectdot2 {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background-color: rgba(0,0,255,0.5);
+}
+.boudingbox {
+  position: absolute;
+  outline: 2px solid #31F34E;
+}
+.alignmentguides{
+  width:2px;
+  
+}
